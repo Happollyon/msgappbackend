@@ -2,7 +2,7 @@
 // npm run docs
 import express from 'express';
 const app = express();
-import {createUser,selectAllUsers} from './db.js';
+import {createUser,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep} from './db.js';
 
 /**
  * @module backend
@@ -24,9 +24,40 @@ import {createUser,selectAllUsers} from './db.js';
  * @returns {Promise<void>}
  */
 
+// add params to the URL
+app.get('/register/name-email/:name/:email', async (req, res) => {
+     const name = req.params.name;
+     const email = req.params.email;
+     console.log(`Name: ${name}, Email: ${email}`);
+     if (name && email) {
+          if(!email.includes('@') || !email.includes('.')){
+              res.json({error:true,
+                        errorMessage:'Invalid email',
+                        data:null})
+              ;}else if(await isEmailAlreadyRegistered(email)){
+                res.json({error:true,
+                          errorMessage:'Email already registered',
+                          data:null})
+                ;
+              }
+              else{
+                // genenerate a random 4 digits number
+                const randomNumber = Math.floor(Math.random() * 10000);
+                //create timestamp for now 
+                const timestamp = Date.now();
+                console.log(`Random number: ${randomNumber}`);
 
-app.get('/create-user', (req, res) => {
-    createUser('John Doe', 'john.doe@example.com', 'securePassword123', 'http://example.com/avatar.jpg');
+                const response = userNameEmailStep(name, email, randomNumber, timestamp);
+                console.log(`Responding with: `, response);
+                res.json(response);
+              }
+
+     }else {
+         res.json({error:true,
+                    errorMessage:'Name and email are required',
+                    data:null})
+         ;}
+    //createUser(req.params.name, req.params.email, 'securePassword123', 'http://example.com/avatar.jpg');
 });
 
 
@@ -34,7 +65,6 @@ app.get('/create-user', (req, res) => {
  * @function selectAllUsers
  * @description This function selects all users
  * @returns {Promise<void>}
- 
  */
 app.get('/select-all-users', async (req, res) => {
   const users = await selectAllUsers();
