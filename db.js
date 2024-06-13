@@ -47,10 +47,10 @@ export async function userNameEmailStep(name,email,code,code_timestamp){
   };
   try {
     const docRef = await usersCollection.add(user);
-    return JSON.stringify({'id':docRef.id,'success':true});
+    return {'id':docRef.id,'success':true}
   } catch (error) {
     console.error('Error adding user: ', error);
-    return JSON.stringify({'success':true});
+    return {'id':null,'success':false}
   }
 
 }

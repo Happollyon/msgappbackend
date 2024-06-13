@@ -1,11 +1,12 @@
 // https://www.youtube.com/watch?v=T-Pum2TraX4&ab_channel=JonathanSanchez
 // npm run docs
 import express from 'express';
-const app = express();
-import {createUser,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep} from './db.js';
+import jwt from 'jsonwebtoken';
 
+import {createUser,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep} from './db.js';
 import nodemailer from 'nodemailer';
 
+const app = express();
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -14,6 +15,7 @@ const transporter = nodemailer.createTransport({
   }
 });
 
+const JWT_SECRET = 'mysecret-key-test-123-fasfaf-f6254fdw95d46s58saf61afdfw0fw48df4d86f0asf48sa';
 /**
  * @module backend
  * @description This is the backend module
@@ -24,6 +26,24 @@ const transporter = nodemailer.createTransport({
  */
 
 
+// Function to generate JWT
+function generateToken(data) {
+  return jwt.sign(data, JWT_SECRET, { expiresIn: '1h' });
+}
+
+function authenticateToken(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  if (token == null) return res.sendStatus(401); // If no token is present
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.sendStatus(403); // If token is not valid
+    req.user = user;
+    next();
+  });
+}
+
 /**
  * @function createUser
  * @description This function creates a new user
@@ -32,6 +52,8 @@ const transporter = nodemailer.createTransport({
  * @param {string} password - The password of the user
  * @param {string} avatar - The avatar of the user
  * @returns {Promise<void>}
+ * 
+ *
  */
 
 // add params to the URL
@@ -67,13 +89,17 @@ app.get('/register/name-email/:name/:email', async (req, res) => {
                   subject: 'Your Verification Code', // Subject line
                   text: `Your verification code is: ${randomNumber}` // Plain text body
                 };
-                transporter.sendMail(mailOptions, function(error, info){
-                  if (error) {
-                    console.log(error);
+
+                // Send the email
+                transporter.sendMail(mailOptions, async function(error, info){
+                  if (error) { // If there is an error
+                    
                     res.json({error: true, errorMessage: 'Failed to send email', data: null});
                   } else {
                     console.log('Email sent: ' + info.response);
-                    const response = userNameEmailStep(name, email, randomNumber, timestamp);
+                    const data = await userNameEmailStep(name, email, randomNumber, timestamp);
+                    const token = generateToken(data);
+                    let response = {error: false, errorMessage: null,token:token, data: data};
                     console.log(`Responding with: `, response);
                     res.json(response);
                   }
@@ -91,6 +117,20 @@ app.get('/register/name-email/:name/:email', async (req, res) => {
     //createUser(req.params.name, req.params.email, 'securePassword123', 'http://example.com/avatar.jpg');
 
 
+
+/**
+ * @function confimationCode
+ * @description This function confirms the code sent to the user by email
+ *
+*/
+
+app.get('/register/confirmation-code/:code',authenticateToken, async (req, res) => {
+  const code = req.params.code;
+  console.log(`Code: ${code}`);
+  res.json({code});
+  // get the user data from the token
+
+});
 
 /**
  * @function selectAllUsers
