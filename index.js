@@ -3,7 +3,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 
-import {createUser,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep} from './db.js';
+import {getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep} from './db.js';
 import nodemailer from 'nodemailer';
 
 const app = express();
@@ -27,14 +27,30 @@ const JWT_SECRET = 'mysecret-key-test-123-fasfaf-f6254fdw95d46s58saf61afdfw0fw48
 
 
 // Function to generate JWT
+/**
+ * @function generateToken
+ * @description This function generates a token using the JWT library and a secret key. The token expires in 1 hour.
+ * @param {*} data  // The data to be stored in the token
+ * @returns // The generated token
+ */
 function generateToken(data) {
   return jwt.sign(data, JWT_SECRET, { expiresIn: '1h' });
 }
 
+/**
+ * @function authenticateToken
+ * @description This function authenticates the token sent by the user in the Authorization header. If the token is not present, it sends a 401 status code. If the token is not valid, it sends a 403 status code.
+ * @param {*} req // The request object from Express  
+ * @param {*} res // The response object from Express
+ * @param {*} next // The next function to be called
+ * @returns // The next function to be called or a status code if the token is not present or not valid.
+ * 
+ */
 function authenticateToken(req, res, next) {
   const authHeader = req.headers['authorization'];
+  
   const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
+  
   if (token == null) return res.sendStatus(401); // If no token is present
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
@@ -56,6 +72,20 @@ function authenticateToken(req, res, next) {
  *
  */
 
+/**
+ * @api {get} /register/name-email/:name/:email Register a new user
+ * @apiName RegisterUser
+ * @apiGroup User
+ * @apiVersion  1.0.0
+ * @apiDescription This endpoint registers a new user with a name and an email address. The email address must be unique.
+ * @apiParam {String} name The name of the user (required)  
+ * @apiParam {String} email The email of the user (required)
+ * @apiSuccess {Boolean} error The error status
+ * @apiSuccess {String} errorMessage The error message
+ * @apiSuccess {Object} data The user data
+ * 
+ */
+
 // add params to the URL
 app.get('/register/name-email/:name/:email', async (req, res) => {
      const name = req.params.name;
@@ -75,10 +105,9 @@ app.get('/register/name-email/:name/:email', async (req, res) => {
               }
               else{
                 // genenerate a random 4 digits number
-                const randomNumber = Math.floor(Math.random() * 10000);
+                const randomNumber = Math.floor(Math.random() * 9000) + 1000;               
                 //create timestamp for now 
                 const timestamp = Date.now();
-                console.log(`Random number: ${randomNumber}`);
 
                 const response = userNameEmailStep(name, email, randomNumber, timestamp);
                 
@@ -96,11 +125,11 @@ app.get('/register/name-email/:name/:email', async (req, res) => {
                     
                     res.json({error: true, errorMessage: 'Failed to send email', data: null});
                   } else {
-                    console.log('Email sent: ' + info.response);
+                  
                     const data = await userNameEmailStep(name, email, randomNumber, timestamp);
                     const token = generateToken(data);
                     let response = {error: false, errorMessage: null,token:token, data: data};
-                    console.log(`Responding with: `, response);
+                   
                     res.json(response);
                   }
                 });
@@ -119,23 +148,70 @@ app.get('/register/name-email/:name/:email', async (req, res) => {
 
 
 /**
- * @function confimationCode
- * @description This function confirms the code sent to the user by email
- *
+ * @api {get} /register/confirmation-code/:code Register a new user 
+ * @apiName RegisterUser
+ * @apiGroup User
+ * @apiVersion  1.0.0
+ * @apiDescription This endpoint is used to confirm the registration of a new user. The user must provide the confirmation code that was sent to the email address.
+ * @apiParam {String} code The confirmation code sent to the user's email address
+ * @apiSuccess {Boolean} error The error status
+ * @apiSuccess {String} errorMessage The error message
+ * @apiSuccess {Object} data The user data
+ * 
 */
+
+function getDataFromToken(req){
+  // get data from the JWT token token
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  return jwt.verify(token, JWT_SECRET);
+}
 
 app.get('/register/confirmation-code/:code',authenticateToken, async (req, res) => {
   const code = req.params.code;
-  console.log(`Code: ${code}`);
-  res.json({code});
+
+  const data = getDataFromToken(req);
+  const dbData = await getCodeById(data.id);
+ 
+  console.log(`DB code: `, dbData.code, `Code: `, code);
+  if (dbData.code == code) {
+    console.log(`Data: `, data);
+
+    // get current timsstamp and compare with  the timestamp in the database in seconds
+    const currentTimestamp = Date.now();
+    const timestampDiff = (currentTimestamp - dbData.code_timestamp)/1000;
+   
+    if(timestampDiff > 300){
+      res.json({error:true,
+                errorMessage:'Code expired',
+                data:null})
+    }else{
+      res.json({error:false,
+                errorMessage:null,
+                data:null})
+    }
+  }else{
+    res.json({error:true,
+              errorMessage:'Invalid code',
+              data:null})
+  }
+  
+  
+  
+  
   // get the user data from the token
 
 });
 
 /**
- * @function selectAllUsers
- * @description This function selects all users
- * @returns {Promise<void>}
+ * @api {get} /select-all-users Select all users
+ * @apiName SelectAllUsers
+ * @apiGroup User
+ * @apiVersion  1.0.0
+ * @apiDescription This endpoint selects all users from the database.
+ * @apiSuccess {Array} users An array of user objects
+ * 
  */
 app.get('/select-all-users', async (req, res) => {
   const users = await selectAllUsers();

@@ -55,6 +55,20 @@ export async function userNameEmailStep(name,email,code,code_timestamp){
 
 }
 
+export async function getCodeById(id){
+  try {
+    const snapshot = await usersCollection.doc(id).get(); // get the document by id
+    if (!snapshot.exists) {
+      console.log('No such document!');
+    } else {
+      return {code:snapshot.data().code,code_timestamp:snapshot.data().code_timestamp}
+    }
+  } catch (error) {
+    console.error('Error getting code: ', error);
+  }
+
+}
+
 export  async function selectAllUsers() {
   try {
     const snapshot = await usersCollection.get();
