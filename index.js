@@ -3,7 +3,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 
-import {getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep} from './db.js';
+import {updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep} from './db.js';
 import nodemailer from 'nodemailer';
 
 const app = express();
@@ -146,6 +146,13 @@ app.get('/register/name-email/:name/:email', async (req, res) => {
     //createUser(req.params.name, req.params.email, 'securePassword123', 'http://example.com/avatar.jpg');
 
 
+function getDataFromToken(req){
+  // get data from the JWT token token
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+  return jwt.verify(token, JWT_SECRET);
+}
 
 /**
  * @api {get} /register/confirmation-code/:code Register a new user 
@@ -159,14 +166,6 @@ app.get('/register/name-email/:name/:email', async (req, res) => {
  * @apiSuccess {Object} data The user data
  * 
 */
-
-function getDataFromToken(req){
-  // get data from the JWT token token
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
-
-  return jwt.verify(token, JWT_SECRET);
-}
 
 app.get('/register/confirmation-code/:code',authenticateToken, async (req, res) => {
   const code = req.params.code;
@@ -198,9 +197,45 @@ app.get('/register/confirmation-code/:code',authenticateToken, async (req, res) 
   }
   
   
+
+
+});
+
+
+
+app.get('/register/resend-code',authenticateToken, async (req, res) => {
+  const TokenData = getDataFromToken(req);
   
-  
-  // get the user data from the token
+  // genenerate a random 4 digits number
+  const randomNumber = Math.floor(Math.random() * 9000) + 1000;               
+  //create timestamp for now 
+  const timestamp = Date.now();
+
+  // update the code and timestamp in the database
+  const codeUpdated = updateCode(TokenData.id, randomNumber, timestamp);
+
+  if(codeUpdated){
+    // Send an email with the random number
+    const mailOptions = {
+      from: 'fagnernunes1108@gmail.com', // Sender address
+      to: "fagnernunes11@gmail.com", // List of receivers
+      subject: 'Your Verification Code', // Subject line
+      text: `Your verification code is: ${randomNumber}` // Plain text body
+    };
+
+
+    // send email with the new code
+    transporter.sendMail(mailOptions, async function(error, info){
+      if (error) { // If there is an error
+        res.json({error: true, errorMessage: 'Failed to send email. Try again', data: null});
+      } else {
+        res.json({error: false, errorMessage: null, data: null});
+      }
+    });
+  }else{
+
+  }
+
 
 });
 
@@ -216,6 +251,7 @@ app.get('/register/confirmation-code/:code',authenticateToken, async (req, res) 
 app.get('/select-all-users', async (req, res) => {
   const users = await selectAllUsers();
   res.json({users});
+
 })
 
 

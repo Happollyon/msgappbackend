@@ -55,6 +55,18 @@ export async function userNameEmailStep(name,email,code,code_timestamp){
 
 }
 
+export async function updateCode(id,code,code_timestamp){
+  try {
+    await usersCollection.doc(id).update({
+      code: code,
+      code_timestamp: code_timestamp
+    });
+    return {'success':true}
+  } catch (error) {
+    console.error('Error updating code: ', error);
+  }
+}
+
 export async function getCodeById(id){
   try {
     const snapshot = await usersCollection.doc(id).get(); // get the document by id
