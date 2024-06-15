@@ -1,3 +1,4 @@
+import { updatePassword } from "firebase/auth";
 import db from "./firebase.js";
 
 const usersCollection = db.collection('users');
@@ -80,6 +81,19 @@ export async function getCodeById(id){
   }
 
 }
+
+export async function setPassword(id, password)  {
+  try {
+    await usersCollection.doc(id).update({
+      password: password
+    });
+
+    return {'success':true}
+  } catch (error) {
+    console.error('Error updating password: ', error);
+    return {'success':false}
+  }
+};
 
 export  async function selectAllUsers() {
   try {

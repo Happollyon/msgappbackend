@@ -3,7 +3,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 
-import {updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep} from './db.js';
+import {updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
 import nodemailer from 'nodemailer';
 
 const app = express();
@@ -233,11 +233,27 @@ app.get('/register/resend-code',authenticateToken, async (req, res) => {
       }
     });
   }else{
-
+    res.json({error: true, errorMessage: 'Failed to update code', data: null});
   }
 
 
 });
+
+app.get('/register/password/:password',authenticateToken, async (req, res) => {
+  const tokenData = getDataFromToken(req);
+  const password = req.params.password;
+  const data = await setPassword(tokenData.id, password);
+
+  if(data.success){
+    console.log('Password set');
+    res.json({error: false, errorMessage: null, data: null});
+  }else{
+    console.log('Failed to set password');
+    res.json({error: true, errorMessage: 'Failed to set password', data: null});
+  }
+
+});
+
 
 /**
  * @api {get} /select-all-users Select all users
