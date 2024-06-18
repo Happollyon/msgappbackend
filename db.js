@@ -29,22 +29,28 @@ export  async  function createUser(name, email, password, avatarUrl, code, code_
 export async function isEmailAlreadyRegistered(email){
   try {
     const snapshot = await usersCollection.where('email', '==', email).get();
+    console.log(snapshot);
     if (snapshot.empty) {
+      console.log('No matching documents.');
+      return {'email_registered':false, 'id':null, 'AccountStatus':"pending"};
+    } 
+    // return user data if email is already registered
 
-      return false;
-    }  
-    return true;
+
+    return {'email_registered':true, 'id':snapshot.docs[0].id, 'AccountStatus':snapshot.docs[0].data().AccountStatus};
   } catch (error) {
-   
+    console.error('Error getting user by email: ', error);
+
   }
 
 }
-export async function userNameEmailStep(name,email,code,code_timestamp){
+export async function userNameEmailStep(name,email,code,code_timestamp,AccountStatus){
   const user = {
     name,
     email,
     code,
-    code_timestamp
+    code_timestamp,
+    AccountStatus
   };
   try {
     const docRef = await usersCollection.add(user);
@@ -99,8 +105,32 @@ export  async function selectAllUsers() {
   try {
     const snapshot = await usersCollection.get();
     const users = snapshot.docs.map(doc => doc.data());
-    return JSON.stringify(users);
+    return users;
   } catch (error) {
     console.error('Error getting users: ', error);
+  }
+}
+export async function setAccountStatus(id,status){
+  try {
+    await usersCollection.doc(id).update({
+      AccountStatus: status
+    });
+    return {'success':true}
+  } catch (error) {
+    console.error('Error updating account status: ', error);
+    return {'success':false}
+  }
+}
+
+//endpoint to clear the user table
+export async function clearUsersTable(){
+  try {
+    const snapshot = await usersCollection.get();
+    snapshot.forEach((doc) => {
+      doc.ref.delete();
+    });
+    console.log('Users table cleared');
+  } catch (error) {
+    console.error('Error clearing users table: ', error);
   }
 }

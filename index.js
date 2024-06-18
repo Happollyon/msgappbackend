@@ -3,7 +3,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 
-import {updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
+import {clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
 import nodemailer from 'nodemailer';
 
 const app = express();
@@ -96,20 +96,23 @@ app.get('/register/name-email/:name/:email', async (req, res) => {
               res.json({error:true,
                         errorMessage:'Invalid email',
                         data:null})
-              ;}else if(await isEmailAlreadyRegistered(email)){
+              ;}else {
 
+                const userinformationByemail = await isEmailAlreadyRegistered(email) 
+                console.log(userinformationByemail);
+                if(userinformationByemail.AccountStatus=="active"&& userinformationByemail.email_registered==true) {
                 res.json({error:true,
                           errorMessage:'Email already registered',
                           data:null})
                 ;
-              }
-              else{
+              
+                }else{
                 // genenerate a random 4 digits number
                 const randomNumber = Math.floor(Math.random() * 9000) + 1000;               
                 //create timestamp for now 
                 const timestamp = Date.now();
 
-                const response = userNameEmailStep(name, email, randomNumber, timestamp);
+               // const response = userNameEmailStep(name, email, randomNumber, timestamp, 'pending');
                 
                 // Send an email with the random number
                 const mailOptions = {
@@ -125,17 +128,24 @@ app.get('/register/name-email/:name/:email', async (req, res) => {
                     
                     res.json({error: true, errorMessage: 'Failed to send email', data: null});
                   } else {
-                  
-                    const data = await userNameEmailStep(name, email, randomNumber, timestamp);
-                    const token = generateToken(data);
-                    let response = {error: false, errorMessage: null,token:token, data: data};
+                    let response
+                    if(userinformationByemail.email_registered==true){
+                      const newCodeData = await updateCode(userinformationByemail.id, randomNumber, timestamp);
+                      const data = {'id':userinformationByemail.id,"success":true}
+                      const token = generateToken(data);
+                      response = {error: false, errorMessage: null, "token":token ,data: data};
+                    }else{
+                      const data = await userNameEmailStep(name, email, randomNumber, timestamp, 'pending');
+                      const token = generateToken(data);
+                      response = {error: false, errorMessage: null,token:token, data: data};
+                    }
                    
                     res.json(response);
                   }
                 });
               }
 
-              
+            }
               }
 
      else {
@@ -171,9 +181,10 @@ app.get('/register/confirmation-code/:code',authenticateToken, async (req, res) 
   const code = req.params.code;
 
   const data = getDataFromToken(req);
+  console.log(`Data: `, data);
   const dbData = await getCodeById(data.id);
  
-  console.log(`DB code: `, dbData.code, `Code: `, code);
+ 
   if (dbData.code == code) {
     console.log(`Data: `, data);
 
@@ -246,7 +257,16 @@ app.get('/register/password/:password',authenticateToken, async (req, res) => {
 
   if(data.success){
     console.log('Password set');
-    res.json({error: false, errorMessage: null, data: null});
+    const AccountStatus = setAccountStatus(tokenData.id, 'active');
+    if(AccountStatus){
+      console.log('Account is active');
+      const token = generateToken({id: tokenData.id, loggedIn: true, AccountStatus: 'active',loggedInAt: Date.now()});
+      res.json({error: false,token:token, errorMessage: null, data: null});
+    }else{
+      console.log('Failed to set account status');
+      res.json({error: true, errorMessage: 'Failed to set account status', data: null});
+    }
+    
   }else{
     console.log('Failed to set password');
     res.json({error: true, errorMessage: 'Failed to set password', data: null});
@@ -266,10 +286,16 @@ app.get('/register/password/:password',authenticateToken, async (req, res) => {
  */
 app.get('/select-all-users', async (req, res) => {
   const users = await selectAllUsers();
-  res.json({users});
+  res.json({"users":users});
 
 })
 
+// endpoint to clear the user table
+app.get('/adm/clear-users-table', async (req, res) => {
+  // clear the user table
+  await clearUsersTable();
+  res.json({message: 'Table cleared'});
+})
 
 app.listen(5001, () => {console.log('Server is running on port 5001')});
 
