@@ -3,7 +3,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 
-import {clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
+import {signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
 import nodemailer from 'nodemailer';
 
 const app = express();
@@ -274,6 +274,26 @@ app.get('/register/password/:password',authenticateToken, async (req, res) => {
 
 });
 
+app.get('/login/:email/:password',async (req, res) => {
+
+  const email = req.params.email;
+  const password = req.params.password;
+  console.log(1)
+  // search for email and password in the database
+  const user = await signIn(email, password);
+  console.log(2)
+  console.log(user.success)
+  if(user.success){
+    console.log(3)
+    const token = generateToken({id: user.id, loggedIn: true, AccountStatus: user.AccountStatus,loggedInAt: Date.now()});
+    console.log(4)
+    res.json({error: false,token:token, errorMessage: null, data: null});
+
+  }else{
+    console.log(5)
+    res.json({error: true, errorMessage: 'Invalid email or password', data: null});
+  }
+});
 
 /**
  * @api {get} /select-all-users Select all users
@@ -296,6 +316,7 @@ app.get('/adm/clear-users-table', async (req, res) => {
   await clearUsersTable();
   res.json({message: 'Table cleared'});
 })
+
 
 app.listen(5001, () => {console.log('Server is running on port 5001')});
 

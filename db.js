@@ -134,3 +134,24 @@ export async function clearUsersTable(){
     console.error('Error clearing users table: ', error);
   }
 }
+export async function signIn(email, password){
+ 
+  try{
+    console.log('signing in');  
+    console.log(email);
+    const snapshot = await usersCollection.where('email', '==', email).get();
+    if (snapshot.empty) {
+      console.log(email,password);
+      console.log('No matching documents.');
+      return {'success':false,'id':null}
+    } 
+    if(snapshot.docs[0].data().password == password){
+      console.log('User signed in');
+      return {'success':true,'id':snapshot.docs[0].id,'AccountStatus':snapshot.docs[0].data().AccountStatus}
+    }
+    console.log('No matching documents.2');
+    return {'success':false,'id':null}
+  }catch(error){
+    console.error('Error signing in: ', error);
+  }
+}
