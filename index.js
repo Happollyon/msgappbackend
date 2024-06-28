@@ -278,19 +278,26 @@ app.get('/login/:email/:password',async (req, res) => {
 
   const email = req.params.email;
   const password = req.params.password;
-  console.log(1)
+
   // search for email and password in the database
   const user = await signIn(email, password);
-  console.log(2)
-  console.log(user.success)
   if(user.success){
-    console.log(3)
+   
     const token = generateToken({id: user.id, loggedIn: true, AccountStatus: user.AccountStatus,loggedInAt: Date.now()});
-    console.log(4)
+   
     res.json({error: false,token:token, errorMessage: null, data: null});
 
   }else{
-    console.log(5)
+    if(user.AccountStatus == 'blocked'){
+
+      // calculate how much time has passed since the last login attempt and how long left to hit the 5 min mark
+      const tryAgain2 = Math.floor( (Date.now() - user.logginAttempt_timestamp )/60000,2); 
+      const tryAgain = 5 - tryAgain2;
+      console.log('Account is blocked. Try again in ', tryAgain, ' minutes');
+
+      res.json({error: true, errorMessage: 'Account is blocked. Try again in '+tryAgain +" min", data: null});
+      return;
+    }
     res.json({error: true, errorMessage: 'Invalid email or password', data: null});
   }
 });

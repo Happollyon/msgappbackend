@@ -7,7 +7,7 @@ const usersCollection = db.collection('users');
 // how should the user table look like?
 // {
 
-export  async  function createUser(name, email, password, avatarUrl, code, code_timestamp, active) {
+export  async  function createUser(name, email, password, avatarUrl, code, code_timestamp, active,logginAttempt,logginAttempt_timestamp) {
   const newUser = {
     name,
     email,
@@ -15,7 +15,9 @@ export  async  function createUser(name, email, password, avatarUrl, code, code_
     avatarUrl,
     code,
     code_timestamp,
-    active
+    active,
+    logginAttempt,
+    logginAttempt_timestamp
   };
   
   try {
@@ -50,7 +52,9 @@ export async function userNameEmailStep(name,email,code,code_timestamp,AccountSt
     email,
     code,
     code_timestamp,
-    AccountStatus
+    AccountStatus,
+    logginAttempt:0,
+    logginAttempt_timestamp:Date.now()
   };
   try {
     const docRef = await usersCollection.add(user);
@@ -134,23 +138,90 @@ export async function clearUsersTable(){
     console.error('Error clearing users table: ', error);
   }
 }
+
+// create a funciton to make usersCollection have same fields
+
 export async function signIn(email, password){
  
   try{
-    console.log('signing in');  
-    console.log(email);
-    const snapshot = await usersCollection.where('email', '==', email).get();
-    if (snapshot.empty) {
-      console.log(email,password);
-      console.log('No matching documents.');
-      return {'success':false,'id':null}
-    } 
-    if(snapshot.docs[0].data().password == password){
+  
+      const snapshot = await usersCollection.where('email', '==', email).get();
+      console.log("logginAttempt ",snapshot.docs[0].data().logginAttempt, "loginAttempt diff",Date.now()-snapshot.docs[0].data().logginAttempt_timestamp,"and ",(Date.now()-snapshot.docs[0].data().logginAttempt_timestamp)<180000,"and",(snapshot.docs[0].data().logginAttempt < 3)," logginAttempt_timestamp",snapshot.docs[0].data().logginAttempt_timestamp,"current time",Date.now() )
+           
+      if (snapshot.empty) { // if no user found with the email is found
+        console.log(email,password);
+        console.log('No matching documents.');
+        return {'success':false,'id':null}
+      } if(!snapshot.empty && snapshot.docs[0].data().password != password){ // if user found with the email but password is incorrect
+        console.log('email matches but password does not match');
+        if(snapshot.docs[0].data().AccountStatus === "blocked" ){
+          console.log("Account is blocked db.js")
+          // if account was bloked more than 5 min ago set AccountStatus to active
+          if((Date.now()-snapshot.docs[0].data().logginAttempt_timestamp)>300000){
+            console.log("Account is blocked more than 5 min ago db.js")
+            await usersCollection.doc(snapshot.docs[0].id).update({
+              logginAttempt:0,
+              logginAttempt_timestamp:Date.now(),
+              AccountStatus:'active'
+            });
+          }
+          console.log(snapshot.docs[0].data().AccountStatus)
+          return {'success':false,'id':null,'AccountStatus':snapshot.docs[0].data().AccountStatus, 'logginAttempt_timestamp':snapshot.docs[0].data().logginAttempt_timestamp}
+        }
+         if(snapshot.docs[0].data().logginAttempt==0){ // if user has not attempted to login before first attemp and timestamp are updated
+          // set count to 1 and attempt_timestamp to current time
+          console.log("counting == 0 db.js setting count to 1 and timestamp to current time")
+          
+          await usersCollection.doc(snapshot.docs[0].id).update({
+            logginAttempt:1,
+            logginAttempt_timestamp:Date.now()
+          });
+          return {'success':false,'id':null,'AccountStatus':snapshot.docs[0].data().AccountStatus}
+        } if((Date.now()-snapshot.docs[0].data().logginAttempt_timestamp)<180000 && snapshot.docs[0].data().logginAttempt < 3){
+            // if last attemp was less than 3 min ago increment the count
+            console.log("counting < 3 db.js and less than 3 min ago")
+            await usersCollection.doc(snapshot.docs[0].id).update({
+              logginAttempt:snapshot.docs[0].data().logginAttempt+1,
+             
+            });
+            return {'success':false,'id':null,'AccountStatus':snapshot.docs[0].data().AccountStatus}
+          } if(snapshot.docs[0].data().logginAttempt>0 && (Date.now()-snapshot.docs[0].data().logginAttempt_timestamp)>180000){ // if user has attempted to login before
+            //at least 1 atempt and last attempt was more than 3 min ago set count to 0 and attempt_timestamp to current time
+            console.log("morete than one attempt and last attempt was more than 3 min ago.. resetting count to 0 and timestamp to current time")
+            console.log("counting > 0 db.js")
+              await usersCollection.doc(snapshot.docs[0].id).update({
+                logginAttempt:0,
+                logginAttempt_timestamp:Date.now()
+              });
+              
+              return {'success':false,'id':null,'AccountStatus':snapshot.docs[0].data().AccountStatus}
+          } if((Date.now()-snapshot.docs[0].data().logginAttempt_timestamp)<180000 && snapshot.docs[0].data().logginAttempt>=3){
+            console.log("counting >= 3 db.js and less than 3 min ago.. account blocked")
+            // if last attemp was less than 3 min ago and count is 3 or more set AccountStatus to blocked
+            await usersCollection.doc(snapshot.docs[0].id).update({
+              logginAttempt:0,
+              logginAttempt_timestamp:Date.now(),
+              AccountStatus:'blocked'
+            });
+          
+
+          return {'success':false,'id':null,'AccountStatus':snapshot.docs[0].data().AccountStatus}
+         } 
+
+         console.log("no if statement")
+         return {'success':false,'id':null,'AccountStatus':snapshot.docs[0].data().AccountStatus}
+    }else{ // if user found with the email and password
       console.log('User signed in');
+      // set attpemt to 0 and attempt_timestamp to current time and set AccountStatus to active
+      await usersCollection.doc(snapshot.docs[0].id).update({
+        logginAttempt:0,
+        logginAttempt_timestamp:Date.now(),
+        AccountStatus:'active'
+      });  
       return {'success':true,'id':snapshot.docs[0].id,'AccountStatus':snapshot.docs[0].data().AccountStatus}
+  
     }
-    console.log('No matching documents.2');
-    return {'success':false,'id':null}
+        
   }catch(error){
     console.error('Error signing in: ', error);
   }
