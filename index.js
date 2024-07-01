@@ -31,7 +31,7 @@ const JWT_SECRET = 'mysecret-key-test-123-fasfaf-f6254fdw95d46s58saf61afdfw0fw48
  * @function generateToken
  * @description This function generates a token using the JWT library and a secret key. The token expires in 1 hour.
  * @param {*} data  // The data to be stored in the token
- * @returns // The generated token
+ * @returns {string} // The generated token
  */
 function generateToken(data) {
   return jwt.sign(data, JWT_SECRET, { expiresIn: '1h' });
@@ -75,7 +75,7 @@ function authenticateToken(req, res, next) {
 /**
  * @api {get} /register/name-email/:name/:email Register a new user
  * @apiName RegisterUser
- * @apiGroup User
+ * @apiGroup Register
  * @apiVersion  1.0.0
  * @apiDescription This endpoint registers a new user with a name and an email address. The email address must be unique.
  * @apiParam {String} name The name of the user (required)  
@@ -156,6 +156,13 @@ app.get('/register/name-email/:name/:email', async (req, res) => {
     //createUser(req.params.name, req.params.email, 'securePassword123', 'http://example.com/avatar.jpg');
 
 
+/** 
+ * @function getDataFromToken
+ * @description This function gets the data from the JWT token sent by the user in the Authorization header.
+ * @param {*} req // The request object from Express
+ * 
+ * @returns // The data from the JWT token
+*/
 function getDataFromToken(req){
   // get data from the JWT token token
   const authHeader = req.headers['authorization'];
@@ -167,7 +174,7 @@ function getDataFromToken(req){
 /**
  * @api {get} /register/confirmation-code/:code Register a new user 
  * @apiName RegisterUser
- * @apiGroup User
+ * @apiGroup Register
  * @apiVersion  1.0.0
  * @apiDescription This endpoint is used to confirm the registration of a new user. The user must provide the confirmation code that was sent to the email address.
  * @apiParam {String} code The confirmation code sent to the user's email address
@@ -213,6 +220,17 @@ app.get('/register/confirmation-code/:code',authenticateToken, async (req, res) 
 });
 
 
+/**
+ * @api {get} /register/resend-code Resend the confirmation code
+ * @apiName ResendCode
+ * @apiGroup User
+ * @apiVersion  1.0.0
+ * @apiDescription This endpoint is used to resend the confirmation code to the user's email address.
+ * @apiSuccess {Boolean} error The error status
+ * @apiSuccess {String} errorMessage The error message
+ * @apiSuccess {Object} data The user data
+ *  
+ */
 
 app.get('/register/resend-code',authenticateToken, async (req, res) => {
   const TokenData = getDataFromToken(req);
@@ -250,6 +268,18 @@ app.get('/register/resend-code',authenticateToken, async (req, res) => {
 
 });
 
+/**
+ * @api {get} /register/password/:password Set the password
+ * @apiName SetPassword
+ * @apiGroup register
+ * @apiVersion  1.0.0
+ * @apiDescription This endpoint is used to set the password for the user. The user must provide the password. 
+ * @apiSuccess {Boolean} error The error status
+ * @apiSuccess {String} errorMessage The error message
+ * @apiSuccess {Object} data The user data
+ * 
+ * 
+*/
 app.get('/register/password/:password',authenticateToken, async (req, res) => {
   const tokenData = getDataFromToken(req);
   const password = req.params.password;
@@ -305,20 +335,30 @@ app.get('/login/:email/:password',async (req, res) => {
 /**
  * @api {get} /select-all-users Select all users
  * @apiName SelectAllUsers
- * @apiGroup User
+ * @apiGroup admin
  * @apiVersion  1.0.0
  * @apiDescription This endpoint selects all users from the database.
  * @apiSuccess {Array} users An array of user objects
  * 
  */
-app.get('/select-all-users', async (req, res) => {
+app.get('/admin/select-all-users', async (req, res) => {
   const users = await selectAllUsers();
   res.json({"users":users});
 
 })
 
+/**
+ * @api {get} /admin/clear-users-table Clear the user table
+ * @apiName ClearUsersTable
+ * @apiGroup admin
+ * @apiVersion  1.0.0
+ * @apiDescription This endpoint clears the user table.
+ * @apiSuccess {String} message A message confirming that the table has been cleared
+ * 
+ 
+*/
 // endpoint to clear the user table
-app.get('/adm/clear-users-table', async (req, res) => {
+app.get('/admin/clear-users-table', async (req, res) => {
   // clear the user table
   await clearUsersTable();
   res.json({message: 'Table cleared'});
