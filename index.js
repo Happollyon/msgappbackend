@@ -3,7 +3,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 
-import {signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
+import {deleteContact,addContact,searchUserByEmail,createUser,signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
 import nodemailer from 'nodemailer';
 
 const app = express();
@@ -34,7 +34,7 @@ const JWT_SECRET = 'mysecret-key-test-123-fasfaf-f6254fdw95d46s58saf61afdfw0fw48
  * @returns {string} // The generated token
  */
 function generateToken(data) {
-  return jwt.sign(data, JWT_SECRET, { expiresIn: '1h' });
+  return jwt.sign(data, JWT_SECRET, { expiresIn: '36h' });
 }
 
 /**
@@ -268,6 +268,77 @@ app.get('/register/resend-code',authenticateToken, async (req, res) => {
 
 });
 
+// and endpoint to that adds a contact to the user's contact list
+app.get('/contacts/add-contact/:id',authenticateToken, async (req, res) => {
+  const tokenData = getDataFromToken(req);
+  const id = req.params.id;
+
+  // add contact to the user's contact list
+  const data = await addContact(tokenData.id, id);
+  if(data.success){
+    res.json({error: false, errorMessage: null, data: null});
+  }else{
+    res.json({error: true, errorMessage: 'Failed to add contact', data: null});
+  }
+});
+
+//endpoint to delete contact
+app.get('/contacts/delete-contact/:id',authenticateToken, async (req, res) => {
+  const tokenData = getDataFromToken(req);
+  const id = req.params.id;
+  console.log('id',id);
+  // delete contact from the user's contact list
+  const data = await deleteContact(tokenData.id, id);
+  if(data.success){
+    res.json({error: false, errorMessage: null, data: null});
+  }else{
+    res.json({error: true, errorMessage: 'Failed to delete contact', data: null});
+  }
+});
+
+// endpoint to get all contacts
+app.get('/get-contacts',authenticateToken, async (req, res) => {
+  const tokenData = getDataFromToken(req);
+  const contacts = await getContacts(tokenData.id);
+  if(contacts.success){
+    // return only id, name, email, avatarUrl
+    const contacts = contacts.contacts.map(contact => 
+      {return {id: contact.id, name: contact.name, email: contact.email, avatarUrl: contact.avatarUrl }}
+    );    
+    res.json({error: false, errorMessage: null, data: contacts.contacts});
+  }else{
+    res.json({error: true, errorMessage: 'Failed to get contacts', data: null});
+  
+  }
+  
+});
+// endpoint to search a user by email and for each user return id, name, email, AccountStatus, email_registered, avatarUrl and if users are friend take user id from token and exclude from the list
+
+app.get('/contacts/search-user/:email', authenticateToken, async (req, res) => {
+  const tokenData = getDataFromToken(req);
+  const email = req.params.email;
+  // get users by email and exclude the user with the token id
+  const users = await searchUserByEmail(tokenData.id, email);
+  if (users.success) {
+    // return only id, name, email, AccountStatus, email_registered, avatarUrl, isFriend
+    console.log("users returned");
+    const usersToReturn = users.users.map(user => {
+      return {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        AccountStatus: user.AccountStatus,
+        email_registered: user.email_registered,
+        avatarUrl: user.avatarUrl,
+        contact: user.isFriend
+      };
+    });
+    console.log(users);
+    res.json({ error: false, errorMessage: null, data: usersToReturn });
+  } else {
+    res.json({ error: true, errorMessage: 'Failed to get contacts', data: null });
+  }
+});
 /**
  * @api {get} /register/password/:password Set the password
  * @apiName SetPassword
@@ -280,6 +351,7 @@ app.get('/register/resend-code',authenticateToken, async (req, res) => {
  * 
  * 
 */
+
 app.get('/register/password/:password',authenticateToken, async (req, res) => {
   const tokenData = getDataFromToken(req);
   const password = req.params.password;
@@ -303,6 +375,7 @@ app.get('/register/password/:password',authenticateToken, async (req, res) => {
   }
 
 });
+
 
 app.get('/login/:email/:password',async (req, res) => {
 
@@ -364,7 +437,71 @@ app.get('/admin/clear-users-table', async (req, res) => {
   res.json({message: 'Table cleared'});
 })
 
+const users = [
+  {
+    name: "Alice Smith",
+    email: "alice@example.com",
+    password: "securepassword123",
+    avatarUrl: "http://example.com/avatar1.png",
+    code: "A1B2C3",
+    code_timestamp: "2023-06-15T14:48:00Z",
+    active: true,
+    logginAttempt: 1,
+    logginAttempt_timestamp: "2023-06-15T14:50:00Z"
+  },
+  {
+    name: "Bob Johnson",
+    email: "bob@example.com",
+    password: "anotherpassword456",
+    avatarUrl: "http://example.com/avatar2.png",
+    code: "D4E5F6",
+    code_timestamp: "2023-06-16T09:30:00Z",
+    active: false,
+    logginAttempt: 3,
+    logginAttempt_timestamp: "2023-06-16T09:35:00Z"
+  },
+  {
+    name: "Charlie Brown",
+    email: "charlie@example.com",
+    password: "yetanotherpassword789",
+    avatarUrl: "http://example.com/avatar3.png",
+    code: "G7H8I9",
+    code_timestamp: "2023-06-17T12:20:00Z",
+    active: true,
+    logginAttempt: 2,
+    logginAttempt_timestamp: "2023-06-17T12:25:00Z"
+  },
+  {
+    name: "Diana Prince",
+    email: "diana@example.com",
+    password: "supersecurepassword012",
+    avatarUrl: "http://example.com/avatar4.png",
+    code: "J1K2L3",
+    code_timestamp: "2023-06-18T15:00:00Z",
+    active: true,
+    logginAttempt: 0,
+    logginAttempt_timestamp: null
+  },
+  {
+    name: "Edward Nygma",
+    email: "edward@example.com",
+    password: "riddlerpassword345",
+    avatarUrl: "http://example.com/avatar5.png",
+    code: "M4N5O6",
+    code_timestamp: "2023-06-19T17:45:00Z",
+    active: false,
+    logginAttempt: 5,
+    logginAttempt_timestamp: "2023-06-19T17:50:00Z"
+  }
+];
 
+// endpoint to create a user
+app.get('/create-users', (req, res) => {
+  users.forEach(async (user) => {
+    await createUser(user.name, user.email, user.password, user.avatarUrl, user.code, user.code_timestamp, user.active, user.logginAttempt, user.logginAttempt_timestamp);
+  });
+  res.json({message: 'Users created'});
+});
 app.listen(5001, () => {console.log('Server is running on port 5001')});
 
 app.get('/', (req, res) => res.json({message: 'Hello World'}))  // http://localhost:5001/

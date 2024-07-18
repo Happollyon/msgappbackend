@@ -1,6 +1,6 @@
 import { updatePassword } from "firebase/auth";
 import db from "./firebase.js";
-
+import firebase from "firebase/compat/app";
 const usersCollection = db.collection('users');
 
 // user table should have naem, email, password, avatarUrl, code ,code_timestamp, active
@@ -46,6 +46,113 @@ export async function isEmailAlreadyRegistered(email){
   }
 
 }
+
+
+export async function addContact(userId, contactId) {
+  try {
+    // Fetch the user's document
+    const userDoc = await usersCollection.doc(userId).get();
+    
+    if (!userDoc.exists) {
+      throw new Error('User not found');
+    }
+
+    // Get the current contacts array
+    const userData = userDoc.data();
+    let contacts = userData.contacts || [];
+
+    // Add the contactId if it doesn't already exist in the array
+    if (!contacts.includes(contactId)) {
+      contacts.push(contactId);
+    }
+
+    // Update the user's document with the new contacts array
+    await usersCollection.doc(userId).update({ contacts });
+
+    return { 'success': true };
+  } catch (error) {
+    console.error('Error adding contact: ', error);
+    return { 'success': false };
+  }
+}
+// delete contact
+export async function deleteContact(userId, contactId) {
+  try {
+    // Fetch the user's document
+    const userDoc = await usersCollection.doc(userId).get();
+    
+    if (!userDoc.exists) {
+      throw new Error('User not found');
+    }
+
+    // Get the current contacts array
+    const userData = userDoc.data();
+    let contacts = userData.contacts || [];
+
+    // Remove the contactId if it exists in the array
+    contacts = contacts.filter(contact => contact !== contactId);
+
+    // Update the user's document with the new contacts array
+    await usersCollection.doc(userId).update({ contacts });
+
+    return { 'success': true };
+  } catch (error) {
+    console.error('Error deleting contact: ', error);
+    return { 'success': false };
+  }
+}
+export async function getContacts(userId){
+  try {
+    // only get userId, name, email, avatarUrl
+    
+    const snapshot = await usersCollection.doc(userId).get();
+    if (!snapshot.exists) {
+      return {"success":false,"message":"No such document!"};
+    } else {
+      return {"success":true,"contacts":snapshot.data().contacts};
+      
+    }
+  } catch (error) {
+    console.error('Error getting contacts: ', error);
+    return {"success":false,"message":"Error getting contacts"};
+  }
+
+}
+export async function searchUserByEmail(userId, email) {
+  try {
+    const snapshot = await usersCollection.where('email', '==', email).get();
+    if (snapshot.empty) {
+      console.log('No matching documents.');
+      return { 'success': false, 'message': 'No matching documents.' };
+    }
+
+    // Get the user's document to retrieve the contacts
+    const userDoc = await usersCollection.doc(userId).get();
+    const userContacts = userDoc.exists ? userDoc.data().contacts || [] : [];
+
+    // Filter out the user with the provided userId and format the user data
+    const users = snapshot.docs
+      .filter(doc => doc.id !== userId)
+      .map(doc => {
+        const data = doc.data();
+        const isFriend = userContacts.includes(doc.id); // Check if the user is in the contact list
+        return {
+          id: doc.id,
+          name: data.name,
+          email: data.email,
+          AccountStatus: data.AccountStatus,
+          email_registered: !!data.email,
+          avatarUrl: data.avatarUrl,
+          isFriend
+        };
+      });
+
+    return { 'success': true, 'users': users };
+  } catch (error) {
+    console.error('Error getting user by email: ', error);
+    return { 'success': false, 'message': 'Error getting user by email.' };
+  }
+}
 export async function userNameEmailStep(name,email,code,code_timestamp,AccountStatus){
   const user = {
     name,
@@ -65,6 +172,7 @@ export async function userNameEmailStep(name,email,code,code_timestamp,AccountSt
   }
 
 }
+
 
 export async function updateCode(id,code,code_timestamp){
   try {
