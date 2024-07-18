@@ -3,7 +3,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 
-import {deleteContact,addContact,searchUserByEmail,createUser,signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
+import {getContacts,deleteContact,addContact,searchUserByEmail,createUser,signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
 import nodemailer from 'nodemailer';
 
 const app = express();
@@ -297,15 +297,16 @@ app.get('/contacts/delete-contact/:id',authenticateToken, async (req, res) => {
 });
 
 // endpoint to get all contacts
-app.get('/get-contacts',authenticateToken, async (req, res) => {
+app.get('/contacts/get-contacts',authenticateToken, async (req, res) => {
   const tokenData = getDataFromToken(req);
   const contacts = await getContacts(tokenData.id);
   if(contacts.success){
-    // return only id, name, email, avatarUrl
-    const contacts = contacts.contacts.map(contact => 
-      {return {id: contact.id, name: contact.name, email: contact.email, avatarUrl: contact.avatarUrl }}
+    // return only id, name, email, avatarUrl,and isFriend
+
+    const ReturnedContacts = contacts.contacts.map(contact => 
+      {return {id: contact.id, name: contact.name, email: contact.email, avatarUrl: contact.avatarUrl ,contact:true}}
     );    
-    res.json({error: false, errorMessage: null, data: contacts.contacts});
+    res.json({error: false, errorMessage: null, data: ReturnedContacts});
   }else{
     res.json({error: true, errorMessage: 'Failed to get contacts', data: null});
   

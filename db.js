@@ -101,22 +101,39 @@ export async function deleteContact(userId, contactId) {
     return { 'success': false };
   }
 }
-export async function getContacts(userId){
+export async function getContacts(userId) {
   try {
-    // only get userId, name, email, avatarUrl
+    // Assuming usersCollection is defined and accessible in this context
+    // and each user document has a 'contacts' field which is an array of contact IDs
     
-    const snapshot = await usersCollection.doc(userId).get();
-    if (!snapshot.exists) {
-      return {"success":false,"message":"No such document!"};
+    const userSnapshot = await usersCollection.doc(userId).get();
+    if (!userSnapshot.exists) {
+      return { "success": false, "message": "No such user!" };
     } else {
-      return {"success":true,"contacts":snapshot.data().contacts};
+      const contactsData = [];
+      const contactsIds = userSnapshot.data().contacts; // Assuming this is an array of contact IDs
       
+      // Fetch each contact's details
+      for (const contactId of contactsIds) {
+        const contactSnapshot = await usersCollection.doc(contactId).get();
+        if (contactSnapshot.exists) {
+          const contactInfo = contactSnapshot.data();
+          contactsData.push({
+            id: contactId,
+            userId: contactInfo.userId, // Assuming there's a userId field in the contact's document
+            name: contactInfo.name,
+            email: contactInfo.email,
+            avatarUrl: contactInfo.avatarUrl
+          });
+        }
+      }
+      
+      return { "success": true, "contacts": contactsData };
     }
   } catch (error) {
     console.error('Error getting contacts: ', error);
-    return {"success":false,"message":"Error getting contacts"};
+    return { "success": false, "message": "Error getting contacts" };
   }
-
 }
 export async function searchUserByEmail(userId, email) {
   try {
