@@ -385,6 +385,7 @@ app.get('/login/:email/:password',async (req, res) => {
 
   // search for email and password in the database
   const user = await signIn(email, password);
+  
   if(user.success){
    
     const token = generateToken({id: user.id, loggedIn: true, AccountStatus: user.AccountStatus,loggedInAt: Date.now()});
@@ -506,3 +507,31 @@ app.get('/create-users', (req, res) => {
 app.listen(5001, () => {console.log('Server is running on port 5001')});
 
 app.get('/', (req, res) => res.json({message: 'Hello World'}))  // http://localhost:5001/
+
+
+
+//================= Websocket server =================
+
+import {WebSocketServer} from 'ws'
+const server = new WebSocketServer({ port: 8080 });
+
+server.on('connection', socket => {
+  console.log('Client connected');
+
+  // Send a welcome message to the client
+  socket.send('Welcome to the WebSocket server!');
+
+  // Handle messages from clients
+  socket.on('message', message => {
+    console.log(`Received message: ${message}`);
+    // Echo the message back to the client
+    socket.send(`Server: ${message}`);
+  });
+
+  // Handle client disconnection
+  socket.on('close', () => {
+    console.log('Client disconnected');
+  });
+});
+
+console.log('WebSocket server is running on ws://localhost:8080');
