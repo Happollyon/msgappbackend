@@ -60,6 +60,13 @@ function authenticateToken(req, res, next) {
   });
 }
 
+// function to aultenticate the token send to the websocket server and return if the token is valid or not
+function authenticateTokenWebsocket(token) {
+  const user = jwt.verify(token, JWT_SECRET);
+  return user;
+}
+
+
 /**
  * @function createUser
  * @description This function creates a new user
@@ -512,26 +519,88 @@ app.get('/', (req, res) => res.json({message: 'Hello World'}))  // http://localh
 
 //================= Websocket server =================
 
-import {WebSocketServer} from 'ws'
-const server = new WebSocketServer({ port: 8080 });
+import {WebSocket, WebSocketServer } from 'ws';
+
+const server = new WebSocketServer({ port: 8080 }); // Create a WebSocket server
+
+function heartbeat() { // Function to check if the client is alive
+  this.isAlive = true;
+}
 
 server.on('connection', socket => {
   console.log('Client connected');
 
-  // Send a welcome message to the client
-  socket.send('Welcome to the WebSocket server!');
+  // Initialize the isAlive property
+  socket.isAlive = true; 
+  socket.on('pong', heartbeat); // Listen for the pong message
 
-  // Handle messages from clients
-  socket.on('message', message => {
-    console.log(`Received message: ${message}`);
-    // Echo the message back to the client
-    socket.send(`Server: ${message}`);
-  });
+  // Wait for the client to send its user ID
+  socket.once('message', message => { // Listen for the first message
 
-  // Handle client disconnection
-  socket.on('close', () => {
-    console.log('Client disconnected');
+    /**
+     * {
+          "type":"message",
+          "token":"token",
+          "msgObj":{
+              "sender":"senderId",
+              "receiver":"receiverId",
+              "message":"message",
+              "imageLink":"link or null",
+              "timestamp":5145646645651
+          }
+        }
+     
+      */
+
+    const userId = message.toString(); // Convert the message to a string
+    socket.userId = userId; // Store the user ID in the socket object
+    console.log(`Client connected with user ID: ${userId}`);
+
+    // Send a welcome message to the client
+    socket.send(`Welcome to the WebSocket server! Your user ID is ${userId}`);
+
+    // Handle subsequent messages from the client
+    socket.on('message', message => { // Listen for messages
+      console.log(`Received message from user ${userId}: ${message}`);
+      // Echo the message back to the client
+      socket.send(`Server: ${message}`); // Send a message to the client
+
+      // forward to a client with a specific user ID
+      server.clients.forEach(client => {
+        if (client !== socket && client.readyState === WebSocket.OPEN && client.userId === 'abc123') { // Check if the client is connected and has the user ID abc123 
+          client.send(`User ${userId} says: ${message}`);
+          console.log(`Forwarded message to user abc123`);
+        }
+      });
+    });
+
+    // Handle client disconnection
+    socket.on('close', () => {
+      console.log(`Client with user ID ${userId} disconnected`);
+    });
   });
 });
 
+// Set up a ping interval to check if clients are alive
+const interval = setInterval(() => {
+  server.clients.forEach(socket => {
+    if (socket.isAlive === false) {
+      console.log(`Terminating dead connection for user ID ${socket.userId}`);
+      return socket.terminate();
+    }
+
+    socket.isAlive = false;
+    socket.ping();
+  });
+}, 30000); // Ping every 30 seconds
+
+server.on('close', () => {
+  clearInterval(interval);
+});
+
 console.log('WebSocket server is running on ws://localhost:8080');
+
+
+//================= Handle messaging =================
+
+// function that takes an o
