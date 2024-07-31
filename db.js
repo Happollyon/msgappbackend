@@ -7,7 +7,7 @@ const usersCollection = db.collection('users');
 // how should the user table look like?
 // {
 
-export  async  function createUser(name, email, password, avatarUrl, code, code_timestamp, active,logginAttempt,logginAttempt_timestamp) {
+export  async  function createUser(name, email, password, avatarUrl, code, code_timestamp, active,logginAttempt,logginAttempt_timestamp,description,vibration,sound,notification) {
   const newUser = {
     name,
     email,
@@ -17,7 +17,11 @@ export  async  function createUser(name, email, password, avatarUrl, code, code_
     code_timestamp,
     active,
     logginAttempt,
-    logginAttempt_timestamp
+    logginAttempt_timestamp,
+    description,
+    vibration,
+    sound,
+    notification
   };
   
   try {
@@ -170,7 +174,22 @@ export async function searchUserByEmail(userId, email) {
     return { 'success': false, 'message': 'Error getting user by email.' };
   }
 }
-export async function userNameEmailStep(name,email,code,code_timestamp,AccountStatus){
+
+// selectUserById returns id, name, email, avatarurl, accountStatus,email
+export async function selectUserById(id) {
+  try {
+    const snapshot = await usersCollection.doc(id).get();
+    if (!snapshot.exists) {
+      return { 'success': false, 'message': 'No such document!' };
+    } else {
+      return { 'success':true,id:snapshot.id, name:snapshot.data().name, email:snapshot.data().email, avatarUrl:snapshot.data().avatarUrl, AccountStatus:snapshot.data().AccountStatus,email:snapshot.data().email,description:snapshot.data().description,vibration:snapshot.data().vibration,sound:snapshot.data().sound,notification:snapshot.data().notification};
+    }
+  } catch (error) {
+    console.error('Error getting user by id: ', error);
+  }
+}
+
+export async function userNameEmailStep(name,email,code,code_timestamp,AccountStatus,){
   const user = {
     name,
     email,
@@ -178,7 +197,12 @@ export async function userNameEmailStep(name,email,code,code_timestamp,AccountSt
     code_timestamp,
     AccountStatus,
     logginAttempt:0,
-    logginAttempt_timestamp:Date.now()
+    logginAttempt_timestamp:Date.now(),
+    description:"",
+    vibration:true,
+    sound:true,
+    notification:true
+
   };
   try {
     const docRef = await usersCollection.add(user);
@@ -190,7 +214,20 @@ export async function userNameEmailStep(name,email,code,code_timestamp,AccountSt
 
 }
 
-
+// update toggles 
+export async function updateToggles(id,sound,notification,vibration){
+  try {
+    await usersCollection.doc(id).update({
+      sound: sound,
+      notification: notification,
+      vibration: vibration
+    });
+    return {'success':true}
+  } catch (error) {
+    console.error('Error updating toggles: ', error);
+    return {'success':false}
+  }
+}
 export async function updateCode(id,code,code_timestamp){
   try {
     await usersCollection.doc(id).update({
@@ -264,7 +301,31 @@ export async function clearUsersTable(){
   }
 }
 
+// update name
+export async function updateName(id, name) {  
+  try {
+    await usersCollection.doc(id).update({
+      name: name
+    });
+    return {'success':true}
+  } catch (error) {
+    console.error('Error updating name: ', error);
+    return {'success':false}
+  }
+}
 
+// update description
+export async function updateDescription(id, description) {
+  try {
+    await usersCollection.doc(id).update({
+      description: description
+    });
+    return {'success':true}
+  } catch (error) {
+    console.error('Error updating description: ', error);
+    return {'success':false}
+  }
+}
 export async function addMessage(senderId, receiverId, message, imageLink){
   // create a message object 
   const newMessage = {
@@ -357,5 +418,26 @@ export async function signIn(email, password){
         
   }catch(error){
     console.error('Error signing in: ', error);
+  }
+}
+export async function updateExistingUsers() {
+  try {
+    const snapshot = await usersCollection.get();
+    const batch = db.batch(); // Use batch to perform multiple writes as a single atomic operation
+
+    snapshot.forEach(doc => {
+      const userRef = usersCollection.doc(doc.id);
+      batch.update(userRef, {
+        description: "", // Default value for description
+        vibration: true, // Default value for vibration
+        sound: true, // Default value for sound
+        notification: true // Default value for notification
+      });
+    });
+
+    await batch.commit();
+    console.log('All existing users updated successfully');
+  } catch (error) {
+    console.error('Error updating existing users: ', error);
   }
 }

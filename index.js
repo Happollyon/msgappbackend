@@ -3,7 +3,7 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
 
-import {getContacts,deleteContact,addContact,searchUserByEmail,createUser,signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
+import {updateToggles,updateDescription,updateExistingUsers,updateName,selectUserById,getContacts,deleteContact,addContact,searchUserByEmail,createUser,signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
 import nodemailer from 'nodemailer';
 
 const app = express();
@@ -357,7 +357,7 @@ app.get('/contacts/search-user/:email', authenticateToken, async (req, res) => {
  * @apiSuccess {String} errorMessage The error message
  * @apiSuccess {Object} data The user data
  * 
- * 
+ *
 */
 
 app.get('/register/password/:password',authenticateToken, async (req, res) => {
@@ -371,7 +371,8 @@ app.get('/register/password/:password',authenticateToken, async (req, res) => {
     if(AccountStatus){
       console.log('Account is active');
       const token = generateToken({id: tokenData.id, loggedIn: true, AccountStatus: 'active',loggedInAt: Date.now()});
-      res.json({error: false,token:token, errorMessage: null, data: null});
+      
+      res.json({error: false,token:token, errorMessage: null, data: userData});
     }else{
       console.log('Failed to set account status');
       res.json({error: true, errorMessage: 'Failed to set account status', data: null});
@@ -384,6 +385,65 @@ app.get('/register/password/:password',authenticateToken, async (req, res) => {
 
 });
 
+//user/update-description/:description to update user description
+app.get('/user/update-description/:description',authenticateToken, async (req, res) => {
+  const tokenData = getDataFromToken(req);
+  const description = req.params.description;
+  const data = await updateDescription(tokenData.id, description);
+  if(data.success){
+    res.json({error: false, errorMessage: null, data: null});
+  }else{
+    res.json({error: true, errorMessage: 'Failed to update description', data: null});
+  }
+})
+// update toggles `${baseurlBack}/user/update-toggles/${sound}/${notification}/${vibration}`;
+app.get('/user/update-toggles/:sound/:notification/:vibration',authenticateToken, async (req, res) => {
+  const tokenData = getDataFromToken(req);
+  // turt string to boolean
+  const sound = req.params.sound === 'true';
+  const notification = req.params.notification === 'true';
+  const vibration = req.params.vibration === 'true';
+  const data = await updateToggles(tokenData.id, sound, notification, vibration);
+  if(data.success){
+    res.json({error: false, errorMessage: null, data: null});
+  }else{
+    res.json({error: true, errorMessage: 'Failed to update toggles', data: null});
+  }
+});
+// user/update-name/:name to update user name
+app.get('/user/update-name/:name',authenticateToken, async (req, res) => {
+  const tokenData = getDataFromToken(req);
+  const name = req.params.name;
+  const data = await updateName(tokenData.id, name);
+  if(data.success){
+    res.json({error: false, errorMessage: null, data: null});
+  }else{
+    res.json({error: true, errorMessage: 'Failed to update name', data: null});
+  }
+});
+app.get('/user/getUser', authenticateToken,async (req, res) => {
+  const tokenData = getDataFromToken(req);
+  const user = await selectUserById(tokenData.id);
+  if(user.success){
+    res.json({error: false, errorMessage: null, data: user});
+  }else{
+    console.log('Failed to get user');
+    res.json({error: true, errorMessage: 'Failed to get user', data: null});
+  }
+
+});
+
+//endpoint to update Password
+app.get('/user/update-password/:password', authenticateToken, async (req, res) => {
+  const tokenData = getDataFromToken(req);
+  const password = req.params.password;
+  const data = await setPassword(tokenData.id, password);
+  if(data.success){
+    res.json({error: false, errorMessage: null, data: null});
+  }else{
+    res.json({error: true, errorMessage: 'Failed to update password', data: null});
+  }
+});
 
 app.get('/login/:email/:password',async (req, res) => {
 
@@ -602,5 +662,3 @@ console.log('WebSocket server is running on ws://localhost:8080');
 
 
 //================= Handle messaging =================
-
-// function that takes an o
