@@ -2,8 +2,10 @@
 // npm run docs
 import express from 'express';
 import jwt from 'jsonwebtoken';
+import AWS from 'aws-sdk';
+import multer from 'multer';
 
-import {updateToggles,updateDescription,updateExistingUsers,updateName,selectUserById,getContacts,deleteContact,addContact,searchUserByEmail,createUser,signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
+import {updateUserProfilePicture,updateToggles,updateDescription,updateExistingUsers,updateName,selectUserById,getContacts,deleteContact,addContact,searchUserByEmail,createUser,signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
 import nodemailer from 'nodemailer';
 
 const app = express();
@@ -14,6 +16,53 @@ const transporter = nodemailer.createTransport({
     pass: 'kcnj wyae ehov qgdl' // Your email password
   }
 });
+
+// Configure AWS SDK
+AWS.config.update({
+  accessKeyId: 'AKIA6GBMHBXKSJ4MBQ5B',
+  secretAccessKey: '49tWX4UWShQ3F3p/qzAcJrTuoJAe3xrpYjSLW9Rr',
+  region: 'eu-north-1'
+});
+
+const s3 = new AWS.S3();
+const upload = multer({ storage: multer.memoryStorage() });
+
+// Middleware to parse JSON bodies in POST requests.. upload.single('profilePicture') 
+app.post('/upload-profile-picture', authenticateToken, upload.single('photo'), async (req, res) => {
+  const TokenData = getDataFromToken(req); // Assuming authenticateToken middleware sets req.user
+  const file = req.file;
+
+  if (!file) {
+
+    return res.status(400).json({ error: true, errorMessage: 'No file uploaded', data: null });
+  }
+
+  console.log("preparing params")
+
+  const params = {
+    Bucket: 'msgappfinalproject',
+    Key: `${TokenData.id}-${Date.now()}-${file.originalname}`,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+    
+  };
+
+  
+  try {
+    console.log('Uploading data...');
+    const data = await s3.upload(params).promise();
+    console.log('uploaded data: ');
+    const profilePictureUrl = data.Location;
+    console.log('Profile picture URL: ', profilePictureUrl);
+    await updateUserProfilePicture(TokenData.id, profilePictureUrl);
+    console.log('Profile picture URL saved in database');
+    res.json({ error: false, errorMessage: null, data: { profilePictureUrl } });
+  } catch (err) {
+    console.log('Failed to upload profile picture: ', err);
+    res.status(500).json({ error: true, errorMessage: 'Failed to upload profile picture', data: null });
+  }
+});
+
 
 const JWT_SECRET = 'mysecret-key-test-123-fasfaf-f6254fdw95d46s58saf61afdfw0fw48df4d86f0asf48sa';
 /**
@@ -445,6 +494,7 @@ app.get('/user/update-password/:password', authenticateToken, async (req, res) =
   }
 });
 
+// endpoint to receive a profile picture send it to 
 app.get('/login/:email/:password',async (req, res) => {
 
   const email = req.params.email;
@@ -580,6 +630,7 @@ app.get('/', (req, res) => res.json({message: 'Hello World'}))  // http://localh
 //================= Websocket server =================
 
 import {WebSocket, WebSocketServer } from 'ws';
+import { confirmPasswordReset } from 'firebase/auth';
 
 const server = new WebSocketServer({ port: 8080 }); // Create a WebSocket server
 

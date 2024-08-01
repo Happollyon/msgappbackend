@@ -228,6 +228,19 @@ export async function updateToggles(id,sound,notification,vibration){
     return {'success':false}
   }
 }
+
+//updateUserProfilePicture
+export async function updateUserProfilePicture(id,avatarUrl){
+  try {
+    await usersCollection.doc(id).update({
+      avatarUrl: avatarUrl
+    });
+    return {'success':true}
+  } catch (error) {
+    console.error('Error updating profile picture: ', error);
+    return {'success':false}
+  }
+}
 export async function updateCode(id,code,code_timestamp){
   try {
     await usersCollection.doc(id).update({
