@@ -2,6 +2,8 @@ import { updatePassword } from "firebase/auth";
 import db from "./firebase.js";
 import firebase from "firebase/compat/app";
 const usersCollection = db.collection('users');
+const messagesCollection = db.collection('messages');
+const chatsCollection = db.collection('chats');
 
 // user table should have naem, email, password, avatarUrl, code ,code_timestamp, active
 // how should the user table look like?
@@ -21,7 +23,8 @@ export  async  function createUser(name, email, password, avatarUrl, code, code_
     description,
     vibration,
     sound,
-    notification
+    notification,
+    contacts: []
   };
   
   try {
@@ -431,6 +434,196 @@ export async function signIn(email, password){
         
   }catch(error){
     console.error('Error signing in: ', error);
+  }
+}
+
+export async function addChatsFieldToUsers() {
+  try {
+    const snapshot = await usersCollection.get();
+    const batch = db.batch(); // Use batch to perform multiple writes as a single atomic operation
+
+    snapshot.forEach(doc => {
+      const userData = doc.data();
+      if (!userData.hasOwnProperty('chats')) {
+        batch.update(usersCollection.doc(doc.id), { chats: [] });
+      }
+    });
+
+    await batch.commit();
+    console.log('Chats field added to all users successfully');
+  } catch (error) {
+    console.error('Error adding chats field to users: ', error);
+  }
+}
+
+// function to save message  to the database saveMessage(delivered, read, message, sender, receiver, imageLink, msgTimestamp);
+
+
+export async function saveMessage(delivered, read, message, sender, receiver, imageLink, msgTimestamp) {
+  const newMessage = {
+    delivered,
+    read,
+    message,
+    sender,
+    receiver,
+    imageLink,
+    msgTimestamp
+  };
+
+  try {
+    // Check if a chat exists between the sender and receiver
+    let chatId;
+    const chatSnapshot = await chatsCollection
+      .where('participants', 'array-contains', sender)
+      .get();
+
+    chatSnapshot.forEach(doc => {
+      const data = doc.data();
+      if (data.participants.includes(receiver)) {
+        chatId = doc.id;
+      }
+    });
+
+    // If no chat exists, create a new chat
+    if (!chatId) {
+      const newChat = {
+        participants: [sender, receiver],
+        messages: [],
+        lastMessage: message,
+        lastMessageTimestamp: msgTimestamp
+      };
+      const chatDocRef = await chatsCollection.add(newChat);
+      chatId = chatDocRef.id;
+    } else {
+      // Update the last message and timestamp in the existing chat
+      await chatsCollection.doc(chatId).update({
+        lastMessage: message,
+        lastMessageTimestamp: msgTimestamp
+      });
+    }
+
+    // Save the message in the messages collection
+    const docRef = await messagesCollection.add(newMessage);
+    console.log(`Message created with ID: ${docRef.id}`);
+
+    // Workaround to add the message ID to the chat document
+    const chatDoc = await chatsCollection.doc(chatId).get();
+    const chatData = chatDoc.data();
+    const updatedMessages = chatData.messages || [];
+    updatedMessages.push(docRef.id);
+
+    await chatsCollection.doc(chatId).update({
+      messages: updatedMessages
+    });
+
+    return { success: true, id: docRef.id };
+  } catch (error) {
+    console.error('Error adding message: ', error);
+    return { success: false, error };
+  }
+}
+
+
+// function to update message status to delivered  markMessageDelivered(messageId)
+export async function markMessageDelivered(messageId) {
+  try {
+    await messagesCollection.doc(messageId).update({ delivered: true });
+    return { success: true };
+  } catch (error) {
+    console.error('Error marking message as delivered: ', error);
+    return { success: false, error };
+  }
+}
+// function to get messages between two users
+export async function getMessagesBetweenUsers(userId1, userId2, limit = 20, lastMessageTimestamp = null) {
+  try {
+    let query = messagesCollection
+      .where('sender', 'in', [userId1, userId2])
+      .where('receiver', 'in', [userId1, userId2])
+      .orderBy('msgTimestamp', 'desc')
+      .limit(limit);
+
+    if (lastMessageTimestamp) {
+      query = query.startAfter(lastMessageTimestamp);
+    }
+
+    const snapshot = await query.get();
+    const messages = snapshot.docs.map(doc => doc.data());
+    console.log(messages, " messages db.js"); 
+
+    return { success: true, messages };
+  } catch (error) {
+    console.error('Error retrieving messages: ', error);
+    return { success: false, error };
+  }
+}
+export async function getChatsByUserId(userId) {
+  try {
+    const userDoc = await usersCollection.doc(userId).get();
+    if (!userDoc.exists) {
+      return { success: false, message: 'User not found' };
+    }
+
+    const userChats = userDoc.data().chats || [];
+    const userContacts = userDoc.data().contacts || [];
+    const chats = [];
+
+    for (const chatId of userChats) {
+      const chatDoc = await chatsCollection.doc(chatId).get();
+      if (chatDoc.exists) {
+        const chatData = chatDoc.data();
+        const otherUserId = chatData.participants.find(id => id !== userId);
+        const otherUserDoc = await usersCollection.doc(otherUserId).get();
+        
+        if (otherUserDoc.exists) {
+          const otherUserData = otherUserDoc.data();
+          const isFriend = userContacts.includes(otherUserId);
+          
+          chats.push({
+            id: chatDoc.id,
+            ...chatData,
+            otherUser: {
+              id: otherUserId,
+              name: otherUserData.name,
+              email: otherUserData.email,
+              avatarUrl: otherUserData.avatarUrl,
+              email_registered: true,
+              isFriend: isFriend
+            }
+          });
+        }
+      }
+    }
+
+    return { success: true, chats };
+  } catch (error) {
+    console.error('Error getting chats by user ID: ', error);
+    return { success: false, message: 'Error getting chats by user ID' };
+  }
+}
+
+export async function getMessagesByChatId(chatId, limit = 20, lastMessageTimestamp = null) {
+  try {
+    const chatDoc = await chatsCollection.doc(chatId).get();
+    if (!chatDoc.exists) {
+      return { success: false, message: 'Chat not found' };
+    }
+
+    const chatData = chatDoc.data();
+    const messageIds = chatData.messages || [];
+    const messages = [];
+
+    for (const messageId of messageIds) {
+      const messageDoc = await messagesCollection.doc(messageId).get();
+      if (messageDoc.exists) {
+        messages.push({ id: messageDoc.id, ...messageDoc.data() });
+      }
+    }
+
+    return { success: true, messages };
+  } catch (error) {
+    console.error('Error getting messages by chat ID: ', error);
+    return { success: false, message: 'Error getting messages by chat ID' };
   }
 }
 export async function updateExistingUsers() {

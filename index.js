@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import AWS from 'aws-sdk';
 import multer from 'multer';
 
-import {updateUserProfilePicture,updateToggles,updateDescription,updateExistingUsers,updateName,selectUserById,getContacts,deleteContact,addContact,searchUserByEmail,createUser,signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
+import {getMessagesByChatId,getChatsByUserId,getMessagesBetweenUsers,markMessageDelivered,saveMessage,updateUserProfilePicture,updateToggles,updateDescription,updateExistingUsers,updateName,selectUserById,getContacts,deleteContact,addContact,searchUserByEmail,createUser,signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
 import nodemailer from 'nodemailer';
 
 const app = express();
@@ -421,7 +421,7 @@ app.get('/register/password/:password',authenticateToken, async (req, res) => {
       console.log('Account is active');
       const token = generateToken({id: tokenData.id, loggedIn: true, AccountStatus: 'active',loggedInAt: Date.now()});
       
-      res.json({error: false,token:token, errorMessage: null, data: userData});
+      res.json({error: false,token:token, errorMessage: null, data: token});
     }else{
       console.log('Failed to set account status');
       res.json({error: true, errorMessage: 'Failed to set account status', data: null});
@@ -556,64 +556,62 @@ app.get('/admin/clear-users-table', async (req, res) => {
   res.json({message: 'Table cleared'});
 })
 
-const users = [
-  {
-    name: "Alice Smith",
-    email: "alice@example.com",
-    password: "securepassword123",
-    avatarUrl: "http://example.com/avatar1.png",
-    code: "A1B2C3",
-    code_timestamp: "2023-06-15T14:48:00Z",
-    active: true,
-    logginAttempt: 1,
-    logginAttempt_timestamp: "2023-06-15T14:50:00Z"
-  },
-  {
-    name: "Bob Johnson",
-    email: "bob@example.com",
-    password: "anotherpassword456",
-    avatarUrl: "http://example.com/avatar2.png",
-    code: "D4E5F6",
-    code_timestamp: "2023-06-16T09:30:00Z",
-    active: false,
-    logginAttempt: 3,
-    logginAttempt_timestamp: "2023-06-16T09:35:00Z"
-  },
-  {
-    name: "Charlie Brown",
-    email: "charlie@example.com",
-    password: "yetanotherpassword789",
-    avatarUrl: "http://example.com/avatar3.png",
-    code: "G7H8I9",
-    code_timestamp: "2023-06-17T12:20:00Z",
-    active: true,
-    logginAttempt: 2,
-    logginAttempt_timestamp: "2023-06-17T12:25:00Z"
-  },
-  {
-    name: "Diana Prince",
-    email: "diana@example.com",
-    password: "supersecurepassword012",
-    avatarUrl: "http://example.com/avatar4.png",
-    code: "J1K2L3",
-    code_timestamp: "2023-06-18T15:00:00Z",
-    active: true,
-    logginAttempt: 0,
-    logginAttempt_timestamp: null
-  },
-  {
-    name: "Edward Nygma",
-    email: "edward@example.com",
-    password: "riddlerpassword345",
-    avatarUrl: "http://example.com/avatar5.png",
-    code: "M4N5O6",
-    code_timestamp: "2023-06-19T17:45:00Z",
-    active: false,
-    logginAttempt: 5,
-    logginAttempt_timestamp: "2023-06-19T17:50:00Z"
-  }
-];
 
+
+
+
+// endpoint to get messages between two users /messages/${userInfo.id}/{contactInfo.id}
+app.get('/messages/:sender/:receiver', authenticateToken, async (req, res) => {
+  const sender = req.params.sender;
+  const receiver = req.params.receiver;
+  console.log('sender',sender);
+  console.log('receiver',receiver);
+  const messages = await getMessagesBetweenUsers(sender, receiver);
+  
+  if(messages.success){
+    console.log('Messages:', messages.messages);
+    res.json({error: false, errorMessage: null, data: messages.messages});
+  }else{
+    res.json({error: true, errorMessage: 'Failed to get messages', data: null});
+  }
+
+});
+
+
+app.get('/chats/getChatsAndMessages', authenticateToken, async (req, res) => {
+  const userId = getDataFromToken(req).id;
+
+  try {
+    const chatsResult = await getChatsByUserId(userId);
+    if (!chatsResult.success) {
+      return res.status(500).json({ success: false, message: chatsResult.message });
+    }
+
+    const chats = chatsResult.chats;
+    const chatsWithMessages = [];
+
+    for (const chat of chats) {
+      const messagesResult = await getMessagesByChatId(chat.id);
+      if (messagesResult.success) {
+        chatsWithMessages.push({ 
+          ...chat, 
+          messages: messagesResult.messages 
+        });
+      } else {
+        chatsWithMessages.push({ 
+          ...chat, 
+          messages: [] 
+        });
+      }
+    }
+
+  
+    return res.json({ success: true, chats: chatsWithMessages });
+  } catch (error) {
+    console.error('Error getting chats and messages: ', error);
+    return res.status(500).json({ success: false, message: 'Error getting chats and messages' });
+  }
+});
 // endpoint to create a user
 app.get('/create-users', (req, res) => {
   users.forEach(async (user) => {
@@ -621,6 +619,36 @@ app.get('/create-users', (req, res) => {
   });
   res.json({message: 'Users created'});
 });
+
+async function  savemessage  (delivered, read, message, sender, receiver, imageLink, msgTimestamp){
+  
+  // Save the message to the database
+  //const message = await saveMessage(delivered, read, message, sender, receiver, imageLink, msgTimestamp);
+  //console.log('Message saved to database:', message);
+  return new Promise(async (resolve, reject) => {
+    const messageReturn = await saveMessage(delivered, read, message, sender, receiver, imageLink, msgTimestamp);
+
+    if(messageReturn.success){
+      resolve(messageReturn);
+    }
+      else{
+        reject(messageReturn);
+      }
+  });
+
+}
+
+async function markMessageDeliveredTouser(messageId){
+  return new Promise(async (resolve, reject) => {
+    const messageReturn = await markMessageDelivered(messageId);
+    if(messageReturn.success){
+      resolve(messageReturn);
+    }
+      else{
+        reject(messageReturn);
+      }
+  });
+}
 app.listen(5001, () => {console.log('Server is running on port 5001')});
 
 app.get('/', (req, res) => res.json({message: 'Hello World'}))  // http://localhost:5001/
@@ -648,21 +676,6 @@ server.on('connection', socket => {
   // Wait for the client to send its user ID
   socket.once('message', message => { // Listen for the first message
 
-    /**
-     * {
-          "type":"message",
-          "token":"token",
-          "msgObj":{
-              "sender":"senderId",
-              "receiver":"receiverId",
-              "message":"message",
-              "imageLink":"link or null",
-              "timestamp":5145646645651
-          }
-        }
-     
-      */
-
     const userId = message.toString(); // Convert the message to a string
     socket.userId = userId; // Store the user ID in the socket object
     console.log(`Client connected with user ID: ${userId}`);
@@ -672,17 +685,56 @@ server.on('connection', socket => {
 
     // Handle subsequent messages from the client
     socket.on('message', message => { // Listen for messages
-      console.log(`Received message from user ${userId}: ${message}`);
-      // Echo the message back to the client
-      socket.send(`Server: ${message}`); // Send a message to the client
+    
+      // message is a string, converting to json
+      message = JSON.parse(message);
 
+if (message.type === 'message') {
+    const msg = {
+      "delivered": false,
+      "read": false,
+      "message": message.msgObj.message,
+      "sender": message.msgObj.sender,
+      "receiver": message.msgObj.receiver,
+      "imageLink": message.msgObj.imageLink,
+      "msgTimestamp": Date.now()
+    };
+
+    // Save message to the database
+    savemessage(msg.delivered, msg.read, msg.message, msg.sender, msg.receiver, msg.imageLink, msg.msgTimestamp).then(() => {
+      console.log('Message saved to database:', msg);
+      // add msg id to the message object
+      msg.id = message.msgObj.id;
+      const finalMessage = JSON.stringify(msg);
+      socket.send(`Server: ${finalMessage}`);
+
+        // Send the message to the receiver if the database operation is successful
+        server.clients.forEach(client => {
+          if (client !== socket && client.readyState === WebSocket.OPEN && client.userId === message.msgObj.receiver) {
+            client.send(`User ${msg.sender} says: ${msg.message}`);
+            console.log(`Forwarded message to user ${message.msgObj.receiver}`);
+            
+          }
+        })
+    }).catch((error) => {
+      console.log('Failed to save message to database:', error);
+    });  
+  
+
+    console.log(`Echoed message back to user ${message.msgObj.receiver} the message: ${message}`);
+}
+if (message.type === 'ping_message_delived') {
+  markMessageDeliveredTouser(message.msgObj.messageId)
+}
+
+
+    
+      
+      // Echo the message back to the client
+      socket.send(`Server: ${message}`); // Send a message to the client who just sent the message
+      
       // forward to a client with a specific user ID
-      server.clients.forEach(client => {
-        if (client !== socket && client.readyState === WebSocket.OPEN && client.userId === 'abc123') { // Check if the client is connected and has the user ID abc123 
-          client.send(`User ${userId} says: ${message}`);
-          console.log(`Forwarded message to user abc123`);
-        }
-      });
+      
     });
 
     // Handle client disconnection
