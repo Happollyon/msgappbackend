@@ -27,6 +27,36 @@ AWS.config.update({
 const s3 = new AWS.S3();
 const upload = multer({ storage: multer.memoryStorage() });
 
+// 
+app.post('/send-image', authenticateToken, upload.single('photo'), async (req, res) => {
+  const TokenData = getDataFromToken(req); // Assuming authenticateToken middleware sets req.user
+  const file = req.file;
+
+  if (!file) {
+    return res.status(400).json({ error: true, errorMessage: 'No file uploaded', data: null });
+  }
+
+  console.log("preparing params");
+
+  const params = {
+    Bucket: 'msgappfinalproject',
+    Key: `${TokenData.id}-${Date.now()}-${file.originalname}`,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+  };
+
+  try {
+    console.log('Uploading data...');
+    const data = await s3.upload(params).promise();
+    console.log('uploaded data: ', data);
+    const imageUrl = data.Location;
+    console.log('Image URL: ', imageUrl);
+    res.json({ error: false, errorMessage: null, data: { imageUrl } });
+  } catch (err) {
+    console.log('Failed to upload image: ', err);
+    res.status(500).json({ error: true, errorMessage: 'Failed to upload image', data: null });
+  }
+});
 // Middleware to parse JSON bodies in POST requests.. upload.single('profilePicture') 
 app.post('/upload-profile-picture', authenticateToken, upload.single('photo'), async (req, res) => {
   const TokenData = getDataFromToken(req); // Assuming authenticateToken middleware sets req.user
@@ -685,9 +715,12 @@ server.on('connection', socket => {
 
     // Handle subsequent messages from the client
     socket.on('message', message => { // Listen for messages
-    
+      
       // message is a string, converting to json
       message = JSON.parse(message);
+     
+    
+
 
 if (message.type === 'message') {
     const msg = {
