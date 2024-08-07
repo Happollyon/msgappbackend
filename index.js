@@ -1,14 +1,14 @@
 // https://www.youtube.com/watch?v=T-Pum2TraX4&ab_channel=JonathanSanchez
 // npm run docs
-import express from 'express';
-import jwt from 'jsonwebtoken';
-import AWS from 'aws-sdk';
-import multer from 'multer';
+import express from 'express'; // Import the express library
+import jwt from 'jsonwebtoken'; // Import the jsonwebtoken library
+import AWS from 'aws-sdk'; // Import the AWS SDK
+import multer from 'multer'; // Import the multer library
 
-import {getMessagesByChatId,getChatsByUserId,getMessagesBetweenUsers,markMessageDelivered,saveMessage,updateUserProfilePicture,updateToggles,updateDescription,updateExistingUsers,updateName,selectUserById,getContacts,deleteContact,addContact,searchUserByEmail,createUser,signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
-import nodemailer from 'nodemailer';
+import {blockUser,unblockUser,getMessagesByChatId,getChatsByUserId,getMessagesBetweenUsers,markMessageDelivered,saveMessage,updateUserProfilePicture,updateToggles,updateDescription,updateExistingUsers,updateName,selectUserById,getContacts,deleteContact,addContact,searchUserByEmail,createUser,signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
+import nodemailer from 'nodemailer'; // Import the nodemailer library
 
-const app = express();
+const app = express(); // Create an express app
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -24,10 +24,40 @@ AWS.config.update({
   region: 'eu-north-1'
 });
 
-const s3 = new AWS.S3();
-const upload = multer({ storage: multer.memoryStorage() });
+const s3 = new AWS.S3(); // Create an S3 service object
+const upload = multer({ storage: multer.memoryStorage() }); // Create a multer object to handle file uploads
+ 
 
+/**
+ * @module backend
+ * @description This is the backend module for the messaging app. It includes the endpoints for user registration, login, 
+ * and messaging between users using WebSockets. It also includes the endpoints for uploading images to an S3 bucket,
+ * updating user profile pictures, and updating user settings.
+ * @requires express
+ * @requires db
+ * @author Fagner Nunes
+ * @version 1.0
+ */
 // 
+
+
+/**
+ * @api {post} /send-image Upload an image
+ * @apiName SendImage
+ * @apiGroup Image
+ * @apiDescription Uploads an image to the S3 bucket and returns the image URL.
+ * 
+ * @apiParam {File} photo The image file to be uploaded.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object containing the image URL.
+ * @apiSuccess {String} data.imageUrl The URL of the uploaded image.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 app.post('/send-image', authenticateToken, upload.single('photo'), async (req, res) => {
   const TokenData = getDataFromToken(req); // Assuming authenticateToken middleware sets req.user
   const file = req.file;
@@ -36,7 +66,7 @@ app.post('/send-image', authenticateToken, upload.single('photo'), async (req, r
     return res.status(400).json({ error: true, errorMessage: 'No file uploaded', data: null });
   }
 
-  console.log("preparing params");
+  
 
   const params = {
     Bucket: 'msgappfinalproject',
@@ -46,18 +76,35 @@ app.post('/send-image', authenticateToken, upload.single('photo'), async (req, r
   };
 
   try {
-    console.log('Uploading data...');
+   
     const data = await s3.upload(params).promise();
-    console.log('uploaded data: ', data);
+   
     const imageUrl = data.Location;
-    console.log('Image URL: ', imageUrl);
+    
     res.json({ error: false, errorMessage: null, data: { imageUrl } });
   } catch (err) {
-    console.log('Failed to upload image: ', err);
+   
     res.status(500).json({ error: true, errorMessage: 'Failed to upload image', data: null });
   }
 });
-// Middleware to parse JSON bodies in POST requests.. upload.single('profilePicture') 
+
+/**
+ * @api {post} /upload-profile-picture Upload a profile picture
+ * @apiName UploadProfilePicture
+ * @apiGroup Profile
+ * @apiDescription Uploads a profile picture to the S3 bucket and updates the user's profile picture URL.
+ * 
+ * @apiParam {File} photo The profile picture file to be uploaded.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object containing the profile picture URL.
+ * @apiSuccess {String} data.profilePictureUrl The URL of the uploaded profile picture.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 app.post('/upload-profile-picture', authenticateToken, upload.single('photo'), async (req, res) => {
   const TokenData = getDataFromToken(req); // Assuming authenticateToken middleware sets req.user
   const file = req.file;
@@ -67,7 +114,7 @@ app.post('/upload-profile-picture', authenticateToken, upload.single('photo'), a
     return res.status(400).json({ error: true, errorMessage: 'No file uploaded', data: null });
   }
 
-  console.log("preparing params")
+  
 
   const params = {
     Bucket: 'msgappfinalproject',
@@ -79,30 +126,23 @@ app.post('/upload-profile-picture', authenticateToken, upload.single('photo'), a
 
   
   try {
-    console.log('Uploading data...');
+   
     const data = await s3.upload(params).promise();
-    console.log('uploaded data: ');
+    
     const profilePictureUrl = data.Location;
-    console.log('Profile picture URL: ', profilePictureUrl);
+    
     await updateUserProfilePicture(TokenData.id, profilePictureUrl);
-    console.log('Profile picture URL saved in database');
+   
     res.json({ error: false, errorMessage: null, data: { profilePictureUrl } });
   } catch (err) {
-    console.log('Failed to upload profile picture: ', err);
+    
     res.status(500).json({ error: true, errorMessage: 'Failed to upload profile picture', data: null });
   }
 });
 
 
-const JWT_SECRET = 'mysecret-key-test-123-fasfaf-f6254fdw95d46s58saf61afdfw0fw48df4d86f0asf48sa';
-/**
- * @module backend
- * @description This is the backend module
- * @requires express
- * @requires db
- * @author Fagner Nunes
- * @version 1.0
- */
+const JWT_SECRET = 'mysecret-key-test-123-fasfaf-f6254fdw95d46s58saf61afdfw0fw48df4d86f0asf48sa'; // Secret key for JWT (change in production)
+
 
 
 // Function to generate JWT
@@ -138,41 +178,43 @@ function authenticateToken(req, res, next) {
     next();
   });
 }
-
-// function to aultenticate the token send to the websocket server and return if the token is valid or not
+/**
+ * Authenticate the token sent to the WebSocket server.
+ * 
+ * @function authenticateTokenWebsocket
+ * @description Verifies the provided token and returns the user data if the token is valid.
+ * @param {string} token - The JWT token to be verified.
+ * @returns {Object} The decoded user data from the token.
+ * @throws {Error} If the token is invalid or verification fails.
+ */
 function authenticateTokenWebsocket(token) {
   const user = jwt.verify(token, JWT_SECRET);
   return user;
 }
 
 
-/**
- * @function createUser
- * @description This function creates a new user
- * @param {string} name - The name of the user
- * @param {string} email - The email of the user
- * @param {string} password - The password of the user
- * @param {string} avatar - The avatar of the user
- * @returns {Promise<void>}
- * 
- *
- */
+
 
 /**
- * @api {get} /register/name-email/:name/:email Register a new user
- * @apiName RegisterUser
- * @apiGroup Register
- * @apiVersion  1.0.0
- * @apiDescription This endpoint registers a new user with a name and an email address. The email address must be unique.
- * @apiParam {String} name The name of the user (required)  
- * @apiParam {String} email The email of the user (required)
- * @apiSuccess {Boolean} error The error status
- * @apiSuccess {String} errorMessage The error message
- * @apiSuccess {Object} data The user data
+ * @api {get} /register/name-email/:name/:email Register with Name and Email
+ * @apiName RegisterNameEmail
+ * @apiGroup Registration
+ * @apiDescription Registers a user with their name and email. If the email is already registered and active, it returns an error. Otherwise, it generates a verification code, sends it via email, and returns a token.
  * 
+ * @apiParam {String} name The name of the user.
+ * @apiParam {String} email The email of the user.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object containing user information.
+ * @apiSuccess {String} data.id The ID of the user.
+ * @apiSuccess {Boolean} data.success Indicates if the registration was successful.
+ * @apiSuccess {String} token The token generated for the user.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
  */
-
-// add params to the URL
 app.get('/register/name-email/:name/:email', async (req, res) => {
      const name = req.params.name;
      const email = req.params.email;
@@ -185,7 +227,7 @@ app.get('/register/name-email/:name/:email', async (req, res) => {
               ;}else {
 
                 const userinformationByemail = await isEmailAlreadyRegistered(email) 
-                console.log(userinformationByemail);
+                
                 if(userinformationByemail.AccountStatus=="active"&& userinformationByemail.email_registered==true) {
                 res.json({error:true,
                           errorMessage:'Email already registered',
@@ -257,29 +299,34 @@ function getDataFromToken(req){
   return jwt.verify(token, JWT_SECRET);
 }
 
-/**
- * @api {get} /register/confirmation-code/:code Register a new user 
- * @apiName RegisterUser
- * @apiGroup Register
- * @apiVersion  1.0.0
- * @apiDescription This endpoint is used to confirm the registration of a new user. The user must provide the confirmation code that was sent to the email address.
- * @apiParam {String} code The confirmation code sent to the user's email address
- * @apiSuccess {Boolean} error The error status
- * @apiSuccess {String} errorMessage The error message
- * @apiSuccess {Object} data The user data
- * 
-*/
 
+
+/**
+ * @api {get} /register/confirmation-code/:code Confirm Registration Code
+ * @apiName ConfirmRegistrationCode
+ * @apiGroup Registration
+ * @apiDescription Confirms the registration code sent to the user. Checks if the code matches and if it is within the valid time frame.
+ * 
+ * @apiParam {String} code The confirmation code sent to the user.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object, null if there was an error.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 app.get('/register/confirmation-code/:code',authenticateToken, async (req, res) => {
   const code = req.params.code;
 
   const data = getDataFromToken(req);
-  console.log(`Data: `, data);
+  
   const dbData = await getCodeById(data.id);
  
  
   if (dbData.code == code) {
-    console.log(`Data: `, data);
+    
 
     // get current timsstamp and compare with  the timestamp in the database in seconds
     const currentTimestamp = Date.now();
@@ -307,15 +354,18 @@ app.get('/register/confirmation-code/:code',authenticateToken, async (req, res) 
 
 
 /**
- * @api {get} /register/resend-code Resend the confirmation code
- * @apiName ResendCode
- * @apiGroup User
- * @apiVersion  1.0.0
- * @apiDescription This endpoint is used to resend the confirmation code to the user's email address.
- * @apiSuccess {Boolean} error The error status
- * @apiSuccess {String} errorMessage The error message
- * @apiSuccess {Object} data The user data
- *  
+ * @api {get} /register/resend-code Resend Verification Code
+ * @apiName ResendVerificationCode
+ * @apiGroup Registration
+ * @apiDescription Resends a new verification code to the user's email.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object, null if there was an error.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
  */
 
 app.get('/register/resend-code',authenticateToken, async (req, res) => {
@@ -354,7 +404,24 @@ app.get('/register/resend-code',authenticateToken, async (req, res) => {
 
 });
 
-// and endpoint to that adds a contact to the user's contact list
+/**
+ * @api {get} /contacts/add-contact/:id Add Contact
+ * @apiName AddContact
+ * @apiGroup Contacts
+ * @apiDescription Adds a contact to the user's contact list.
+ * 
+ * @apiParam {String} id The ID of the contact to be added.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object, null if there was an error.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
+
+
 app.get('/contacts/add-contact/:id',authenticateToken, async (req, res) => {
   const tokenData = getDataFromToken(req);
   const id = req.params.id;
@@ -368,11 +435,26 @@ app.get('/contacts/add-contact/:id',authenticateToken, async (req, res) => {
   }
 });
 
-//endpoint to delete contact
+/**
+ * @api {get} /contacts/delete-contact/:id Delete Contact
+ * @apiName DeleteContact
+ * @apiGroup Contacts
+ * @apiDescription Deletes a contact from the user's contact list.
+ * 
+ * @apiParam {String} id The ID of the contact to be deleted.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object, null if there was an error.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 app.get('/contacts/delete-contact/:id',authenticateToken, async (req, res) => {
   const tokenData = getDataFromToken(req);
   const id = req.params.id;
-  console.log('id',id);
+  
   // delete contact from the user's contact list
   const data = await deleteContact(tokenData.id, id);
   if(data.success){
@@ -399,8 +481,30 @@ app.get('/contacts/get-contacts',authenticateToken, async (req, res) => {
   }
   
 });
-// endpoint to search a user by email and for each user return id, name, email, AccountStatus, email_registered, avatarUrl and if users are friend take user id from token and exclude from the list
 
+/**
+ * @api {get} /contacts/search-user/:email Search User by Email
+ * @apiName SearchUserByEmail
+ * @apiGroup Contacts
+ * @apiDescription Searches for users by email and excludes the user with the token ID.
+ * 
+ * @apiParam {String} email The email of the user to search for.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object[]} data The list of users found.
+ * @apiSuccess {String} data.id The ID of the user.
+ * @apiSuccess {String} data.name The name of the user.
+ * @apiSuccess {String} data.email The email of the user.
+ * @apiSuccess {String} data.AccountStatus The account status of the user.
+ * @apiSuccess {Boolean} data.email_registered Indicates if the email is registered.
+ * @apiSuccess {String} data.avatarUrl The avatar URL of the user.
+ * @apiSuccess {Boolean} data.contact Indicates if the user is a contact.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 app.get('/contacts/search-user/:email', authenticateToken, async (req, res) => {
   const tokenData = getDataFromToken(req);
   const email = req.params.email;
@@ -408,7 +512,7 @@ app.get('/contacts/search-user/:email', authenticateToken, async (req, res) => {
   const users = await searchUserByEmail(tokenData.id, email);
   if (users.success) {
     // return only id, name, email, AccountStatus, email_registered, avatarUrl, isFriend
-    console.log("users returned");
+  
     const usersToReturn = users.users.map(user => {
       return {
         id: user.id,
@@ -420,7 +524,7 @@ app.get('/contacts/search-user/:email', authenticateToken, async (req, res) => {
         contact: user.isFriend
       };
     });
-    console.log(users);
+   
     res.json({ error: false, errorMessage: null, data: usersToReturn });
   } else {
     res.json({ error: true, errorMessage: 'Failed to get contacts', data: null });
@@ -429,15 +533,20 @@ app.get('/contacts/search-user/:email', authenticateToken, async (req, res) => {
 /**
  * @api {get} /register/password/:password Set the password
  * @apiName SetPassword
- * @apiGroup register
- * @apiVersion  1.0.0
- * @apiDescription This endpoint is used to set the password for the user. The user must provide the password. 
- * @apiSuccess {Boolean} error The error status
- * @apiSuccess {String} errorMessage The error message
- * @apiSuccess {Object} data The user data
+ * @apiGroup Registration
+ * @apiDescription Sets the password for the user. The user must provide the password.
  * 
- *
-*/
+ * @apiParam {String} password The password to be set.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The user data.
+ * @apiSuccess {String} token The token generated for the user.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 
 app.get('/register/password/:password',authenticateToken, async (req, res) => {
   const tokenData = getDataFromToken(req);
@@ -445,26 +554,40 @@ app.get('/register/password/:password',authenticateToken, async (req, res) => {
   const data = await setPassword(tokenData.id, password);
 
   if(data.success){
-    console.log('Password set');
+   
     const AccountStatus = setAccountStatus(tokenData.id, 'active');
     if(AccountStatus){
-      console.log('Account is active');
+      
       const token = generateToken({id: tokenData.id, loggedIn: true, AccountStatus: 'active',loggedInAt: Date.now()});
       
       res.json({error: false,token:token, errorMessage: null, data: token});
     }else{
-      console.log('Failed to set account status');
+      
       res.json({error: true, errorMessage: 'Failed to set account status', data: null});
     }
     
   }else{
-    console.log('Failed to set password');
+   
     res.json({error: true, errorMessage: 'Failed to set password', data: null});
   }
 
 });
-
-//user/update-description/:description to update user description
+/**
+ * @api {get} /user/update-description/:description Update User Description
+ * @apiName UpdateUserDescription
+ * @apiGroup User
+ * @apiDescription Updates the description of the user.
+ * 
+ * @apiParam {String} description The new description for the user.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object, null if there was an error.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 app.get('/user/update-description/:description',authenticateToken, async (req, res) => {
   const tokenData = getDataFromToken(req);
   const description = req.params.description;
@@ -475,7 +598,24 @@ app.get('/user/update-description/:description',authenticateToken, async (req, r
     res.json({error: true, errorMessage: 'Failed to update description', data: null});
   }
 })
-// update toggles `${baseurlBack}/user/update-toggles/${sound}/${notification}/${vibration}`;
+/**
+ * @api {get} /user/update-toggles/:sound/:notification/:vibration Update User Toggles
+ * @apiName UpdateUserToggles
+ * @apiGroup User
+ * @apiDescription Updates the user's toggle settings for sound, notification, and vibration.
+ * 
+ * @apiParam {String} sound The sound setting (true/false).
+ * @apiParam {String} notification The notification setting (true/false).
+ * @apiParam {String} vibration The vibration setting (true/false).
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object, null if there was an error.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 app.get('/user/update-toggles/:sound/:notification/:vibration',authenticateToken, async (req, res) => {
   const tokenData = getDataFromToken(req);
   // turt string to boolean
@@ -489,7 +629,23 @@ app.get('/user/update-toggles/:sound/:notification/:vibration',authenticateToken
     res.json({error: true, errorMessage: 'Failed to update toggles', data: null});
   }
 });
-// user/update-name/:name to update user name
+
+/**
+ * @api {get} /user/update-name/:name Update User Name
+ * @apiName UpdateUserName
+ * @apiGroup User
+ * @apiDescription Updates the name of the user.
+ * 
+ * @apiParam {String} name The new name for the user.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object, null if there was an error.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 app.get('/user/update-name/:name',authenticateToken, async (req, res) => {
   const tokenData = getDataFromToken(req);
   const name = req.params.name;
@@ -500,19 +656,114 @@ app.get('/user/update-name/:name',authenticateToken, async (req, res) => {
     res.json({error: true, errorMessage: 'Failed to update name', data: null});
   }
 });
+
+/**
+ * @api {get} /user/getUser Get User Information
+ * @apiName GetUserInformation
+ * @apiGroup User
+ * @apiDescription Retrieves the information of the authenticated user.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The user data.
+ * @apiSuccess {String} data.id The ID of the user.
+ * @apiSuccess {String} data.name The name of the user.
+ * @apiSuccess {String} data.email The email of the user.
+ * @apiSuccess {String} data.AccountStatus The account status of the user.
+ * @apiSuccess {Boolean} data.email_registered Indicates if the email is registered.
+ * @apiSuccess {String} data.avatarUrl The avatar URL of the user.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 app.get('/user/getUser', authenticateToken,async (req, res) => {
   const tokenData = getDataFromToken(req);
   const user = await selectUserById(tokenData.id);
   if(user.success){
     res.json({error: false, errorMessage: null, data: user});
   }else{
-    console.log('Failed to get user');
+   
     res.json({error: true, errorMessage: 'Failed to get user', data: null});
   }
 
 });
 
-//endpoint to update Password
+/**
+ * @api {get} /user/block/:id Block User
+ * @apiName BlockUser
+ * @apiGroup User
+ * @apiDescription Blocks a user by their ID.
+ * 
+ * @apiParam {String} id The ID of the user to be blocked.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object, null if there was an error.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
+app.get('/user/block/:id', authenticateToken, async (req, res) => {
+  const tokenData = getDataFromToken(req);
+  const targetUserId = req.params.id;
+ 
+
+  const data = await blockUser(tokenData.id, targetUserId);
+  if (data.success) {
+    
+    res.json({ error: false, errorMessage: null, data: null });
+  } else {
+    res.json({ error: true, errorMessage: 'Failed to block user', data: null });
+  }
+});
+
+/**
+ * @api {get} /user/unblock/:id Unblock User
+ * @apiName UnblockUser
+ * @apiGroup User
+ * @apiDescription Unblocks a user by their ID.
+ * 
+ * @apiParam {String} id The ID of the user to be unblocked.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object, null if there was an error.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
+app.get('/user/unblock/:id', authenticateToken, async (req, res) => {
+  
+  const tokenData = getDataFromToken(req);
+  const targetUserId = req.params.id;
+
+  const data = await unblockUser(tokenData.id, targetUserId);
+  if (data.success) {
+    
+    res.json({ error: false, errorMessage: null, data: null });
+  } else {
+    res.json({ error: true, errorMessage: 'Failed to unblock user', data: null });
+  }
+});
+/**
+ * @api {get} /user/update-password/:password Update User Password
+ * @apiName UpdateUserPassword
+ * @apiGroup User
+ * @apiDescription Updates the password of the authenticated user.
+ * 
+ * @apiParam {String} password The new password for the user.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object, null if there was an error.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 app.get('/user/update-password/:password', authenticateToken, async (req, res) => {
   const tokenData = getDataFromToken(req);
   const password = req.params.password;
@@ -524,7 +775,25 @@ app.get('/user/update-password/:password', authenticateToken, async (req, res) =
   }
 });
 
-// endpoint to receive a profile picture send it to 
+
+/**
+ * @api {get} /login/:email/:password User Login
+ * @apiName UserLogin
+ * @apiGroup Authentication
+ * @apiDescription Authenticates a user using their email and password.
+ * 
+ * @apiParam {String} email The email of the user.
+ * @apiParam {String} password The password of the user.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} token The authentication token if login is successful.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object} data The data object, null if there was an error.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 app.get('/login/:email/:password',async (req, res) => {
 
   const email = req.params.email;
@@ -545,7 +814,7 @@ app.get('/login/:email/:password',async (req, res) => {
       // calculate how much time has passed since the last login attempt and how long left to hit the 5 min mark
       const tryAgain2 = Math.floor( (Date.now() - user.logginAttempt_timestamp )/60000,2); 
       const tryAgain = 5 - tryAgain2;
-      console.log('Account is blocked. Try again in ', tryAgain, ' minutes');
+      
 
       res.json({error: true, errorMessage: 'Account is blocked. Try again in '+tryAgain +" min", data: null});
       return;
@@ -555,13 +824,16 @@ app.get('/login/:email/:password',async (req, res) => {
 });
 
 /**
- * @api {get} /select-all-users Select all users
+ * @api {get} /admin/select-all-users Select all users
  * @apiName SelectAllUsers
- * @apiGroup admin
- * @apiVersion  1.0.0
+ * @apiGroup Admin
  * @apiDescription This endpoint selects all users from the database.
- * @apiSuccess {Array} users An array of user objects
  * 
+ * @apiSuccess {Array} users An array of user objects.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
  */
 app.get('/admin/select-all-users', async (req, res) => {
   const users = await selectAllUsers();
@@ -572,13 +844,15 @@ app.get('/admin/select-all-users', async (req, res) => {
 /**
  * @api {get} /admin/clear-users-table Clear the user table
  * @apiName ClearUsersTable
- * @apiGroup admin
- * @apiVersion  1.0.0
+ * @apiGroup Admin
  * @apiDescription This endpoint clears the user table.
- * @apiSuccess {String} message A message confirming that the table has been cleared
  * 
- 
-*/
+ * @apiSuccess {String} message A message confirming that the table has been cleared.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 // endpoint to clear the user table
 app.get('/admin/clear-users-table', async (req, res) => {
   // clear the user table
@@ -589,17 +863,32 @@ app.get('/admin/clear-users-table', async (req, res) => {
 
 
 
+/**
+ * @api {get} /messages/:sender/:receiver Get Messages Between Users
+ * @apiName GetMessagesBetweenUsers
+ * @apiGroup Messages
+ * @apiDescription Retrieves messages between two users.
+ * 
+ * @apiParam {String} sender The ID of the sender.
+ * @apiParam {String} receiver The ID of the receiver.
+ * 
+ * @apiSuccess {Boolean} error Indicates if there was an error.
+ * @apiSuccess {String} errorMessage The error message, if any.
+ * @apiSuccess {Object[]} data The list of messages.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 
-// endpoint to get messages between two users /messages/${userInfo.id}/{contactInfo.id}
 app.get('/messages/:sender/:receiver', authenticateToken, async (req, res) => {
   const sender = req.params.sender;
   const receiver = req.params.receiver;
-  console.log('sender',sender);
-  console.log('receiver',receiver);
+  
   const messages = await getMessagesBetweenUsers(sender, receiver);
   
   if(messages.success){
-    console.log('Messages:', messages.messages);
+    
     res.json({error: false, errorMessage: null, data: messages.messages});
   }else{
     res.json({error: true, errorMessage: 'Failed to get messages', data: null});
@@ -607,7 +896,18 @@ app.get('/messages/:sender/:receiver', authenticateToken, async (req, res) => {
 
 });
 
-
+/**
+ * @api {get} /chats/getChatsAndMessages Get Chats and Messages
+ * @apiName GetChatsAndMessages
+ * @apiGroup Chats
+ * @apiDescription Retrieves chats and their messages for the authenticated user.
+ * 
+ * @apiSuccess {Boolean} success Indicates if the operation was successful.
+ * @apiSuccess {Object[]} chats The list of chats with their messages.
+ * 
+ * @apiError {Boolean} success Indicates if there was an error.
+ * @apiError {String} message The error message.
+ */
 app.get('/chats/getChatsAndMessages', authenticateToken, async (req, res) => {
   const userId = getDataFromToken(req).id;
 
@@ -642,7 +942,20 @@ app.get('/chats/getChatsAndMessages', authenticateToken, async (req, res) => {
     return res.status(500).json({ success: false, message: 'Error getting chats and messages' });
   }
 });
-// endpoint to create a user
+
+
+/**
+ * @api {get} /create-users Create Users
+ * @apiName CreateUsers
+ * @apiGroup Users
+ * @apiDescription Creates multiple users.
+ * 
+ * @apiSuccess {String} message A message confirming that the users have been created.
+ * 
+ * @apiError {Boolean} error Indicates if there was an error.
+ * @apiError {String} errorMessage The error message.
+ * @apiError {Object} data The data object, null if there was an error.
+ */
 app.get('/create-users', (req, res) => {
   users.forEach(async (user) => {
     await createUser(user.name, user.email, user.password, user.avatarUrl, user.code, user.code_timestamp, user.active, user.logginAttempt, user.logginAttempt_timestamp);
@@ -650,11 +963,26 @@ app.get('/create-users', (req, res) => {
   res.json({message: 'Users created'});
 });
 
+/**
+ * Save the message to the database.
+ * 
+ * @function savemessage
+ * @description Saves a message with the provided details to the database.
+ * @param {boolean} delivered - Indicates if the message was delivered.
+ * @param {boolean} read - Indicates if the message was read.
+ * @param {string} message - The content of the message.
+ * @param {string} sender - The ID of the sender.
+ * @param {string} receiver - The ID of the receiver.
+ * @param {string} imageLink - The link to the image associated with the message.
+ * @param {number} msgTimestamp - The timestamp of the message.
+ * @returns {Promise<Object>} A promise that resolves with the saved message details.
+ * @throws {Error} If the message could not be saved.
+ */
 async function  savemessage  (delivered, read, message, sender, receiver, imageLink, msgTimestamp){
   
   // Save the message to the database
   //const message = await saveMessage(delivered, read, message, sender, receiver, imageLink, msgTimestamp);
-  //console.log('Message saved to database:', message);
+  
   return new Promise(async (resolve, reject) => {
     const messageReturn = await saveMessage(delivered, read, message, sender, receiver, imageLink, msgTimestamp);
 
@@ -668,6 +996,15 @@ async function  savemessage  (delivered, read, message, sender, receiver, imageL
 
 }
 
+/**
+ * Mark a message as delivered to the user.
+ * 
+ * @function markMessageDeliveredTouser
+ * @description Marks a message as delivered based on the provided message ID.
+ * @param {string} messageId - The ID of the message to mark as delivered.
+ * @returns {Promise<Object>} A promise that resolves with the message delivery status.
+ * @throws {Error} If the message delivery status could not be updated.
+ */
 async function markMessageDeliveredTouser(messageId){
   return new Promise(async (resolve, reject) => {
     const messageReturn = await markMessageDelivered(messageId);
@@ -697,7 +1034,7 @@ function heartbeat() { // Function to check if the client is alive
 }
 
 server.on('connection', socket => {
-  console.log('Client connected');
+  
 
   // Initialize the isAlive property
   socket.isAlive = true; 
@@ -708,7 +1045,7 @@ server.on('connection', socket => {
 
     const userId = message.toString(); // Convert the message to a string
     socket.userId = userId; // Store the user ID in the socket object
-    console.log(`Client connected with user ID: ${userId}`);
+   
 
     // Send a welcome message to the client
     socket.send(`Welcome to the WebSocket server! Your user ID is ${userId}`);
@@ -735,7 +1072,7 @@ if (message.type === 'message') {
 
     // Save message to the database
     savemessage(msg.delivered, msg.read, msg.message, msg.sender, msg.receiver, msg.imageLink, msg.msgTimestamp).then(() => {
-      console.log('Message saved to database:', msg);
+
       // add msg id to the message object
       msg.id = message.msgObj.id;
       const finalMessage = JSON.stringify(msg);
@@ -745,16 +1082,16 @@ if (message.type === 'message') {
         server.clients.forEach(client => {
           if (client !== socket && client.readyState === WebSocket.OPEN && client.userId === message.msgObj.receiver) {
             client.send(`User ${msg.sender} says: ${msg.message}`);
-            console.log(`Forwarded message to user ${message.msgObj.receiver}`);
+           
             
           }
         })
     }).catch((error) => {
-      console.log('Failed to save message to database:', error);
+     
     });  
   
 
-    console.log(`Echoed message back to user ${message.msgObj.receiver} the message: ${message}`);
+   
 }
 if (message.type === 'ping_message_delived') {
   markMessageDeliveredTouser(message.msgObj.messageId)
@@ -772,7 +1109,7 @@ if (message.type === 'ping_message_delived') {
 
     // Handle client disconnection
     socket.on('close', () => {
-      console.log(`Client with user ID ${userId} disconnected`);
+     
     });
   });
 });
@@ -781,7 +1118,7 @@ if (message.type === 'ping_message_delived') {
 const interval = setInterval(() => {
   server.clients.forEach(socket => {
     if (socket.isAlive === false) {
-      console.log(`Terminating dead connection for user ID ${socket.userId}`);
+  
       return socket.terminate();
     }
 
@@ -794,7 +1131,7 @@ server.on('close', () => {
   clearInterval(interval);
 });
 
-console.log('WebSocket server is running on ws://localhost:8080');
+
 
 
 //================= Handle messaging =================

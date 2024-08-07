@@ -1,4 +1,53 @@
-import { updatePassword } from "firebase/auth";// import the updatePassword function from the firebase/auth module
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    
+    <meta charset="utf-8">
+    <title>db.js - Documentation</title>
+    
+    
+    <script src="scripts/prettify/prettify.js"></script>
+    <script src="scripts/prettify/lang-css.js"></script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc.css">
+    <script src="scripts/nav.js" defer></script>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body>
+
+<input type="checkbox" id="nav-trigger" class="nav-trigger" />
+<label for="nav-trigger" class="navicon-button x">
+  <div class="navicon"></div>
+</label>
+
+<label for="nav-trigger" class="overlay"></label>
+
+<nav >
+    
+    <input type="text" id="nav-search" placeholder="Search" />
+    
+    
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-backend.html">backend</a><ul class='methods'><li data-type='method'><a href="module-backend.html#~authenticateToken">authenticateToken</a></li><li data-type='method'><a href="module-backend.html#~authenticateTokenWebsocket">authenticateTokenWebsocket</a></li><li data-type='method'><a href="module-backend.html#~generateToken">generateToken</a></li><li data-type='method'><a href="module-backend.html#~getDataFromToken">getDataFromToken</a></li><li data-type='method'><a href="module-backend.html#~markMessageDeliveredTouser">markMessageDeliveredTouser</a></li><li data-type='method'><a href="module-backend.html#~savemessage">savemessage</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#addChatsFieldToUsers">addChatsFieldToUsers</a></li><li><a href="global.html#addContact">addContact</a></li><li><a href="global.html#addMessage">addMessage</a></li><li><a href="global.html#blockUser">blockUser</a></li><li><a href="global.html#clearUsersTable">clearUsersTable</a></li><li><a href="global.html#createUser">createUser</a></li><li><a href="global.html#deleteContact">deleteContact</a></li><li><a href="global.html#getChatsByUserId">getChatsByUserId</a></li><li><a href="global.html#getCodeById">getCodeById</a></li><li><a href="global.html#getContacts">getContacts</a></li><li><a href="global.html#getMessagesBetweenUsers">getMessagesBetweenUsers</a></li><li><a href="global.html#getMessagesByChatId">getMessagesByChatId</a></li><li><a href="global.html#isEmailAlreadyRegistered">isEmailAlreadyRegistered</a></li><li><a href="global.html#markMessageDelivered">markMessageDelivered</a></li><li><a href="global.html#saveMessage">saveMessage</a></li><li><a href="global.html#searchUserByEmail">searchUserByEmail</a></li><li><a href="global.html#selectAllUsers">selectAllUsers</a></li><li><a href="global.html#selectUserById">selectUserById</a></li><li><a href="global.html#setAccountStatus">setAccountStatus</a></li><li><a href="global.html#setPassword">setPassword</a></li><li><a href="global.html#unblockUser">unblockUser</a></li><li><a href="global.html#updateCode">updateCode</a></li><li><a href="global.html#updateDescription">updateDescription</a></li><li><a href="global.html#updateExistingUsers">updateExistingUsers</a></li><li><a href="global.html#updateName">updateName</a></li><li><a href="global.html#updateToggles">updateToggles</a></li><li><a href="global.html#updateUserProfilePicture">updateUserProfilePicture</a></li><li><a href="global.html#userNameEmailStep">userNameEmailStep</a></li></ul>
+    
+</nav>
+
+<div id="main">
+    
+    <h1 class="page-title">db.js</h1>
+    
+
+    
+
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source linenums"><code>import { updatePassword } from "firebase/auth";// import the updatePassword function from the firebase/auth module
 import db from "./firebase.js"; // import the db object from the firebase.js file
 import firebase from "firebase/compat/app"; // import the firebase/app module
 const usersCollection = db.collection('users'); // get the users collection from the database
@@ -26,7 +75,7 @@ const chatsCollection = db.collection('chats'); // get the chats collection from
  * @param {boolean} sound - The sound setting of the user.
  * @param {boolean} notification - The notification setting of the user.
  * 
- * @returns {Promise<void>} A promise that resolves when the user is added.
+ * @returns {Promise&lt;void>} A promise that resolves when the user is added.
  * 
  * @throws {Error} Will throw an error if adding the user fails.
  */
@@ -68,7 +117,7 @@ export async function createUser(name, email, password, avatarUrl, code, code_ti
  * 
  * @param {string} email - The email to check for registration.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `email_registered` (boolean): Indicates if the email is registered.
  * - `id` (string|null): The ID of the user if the email is registered, otherwise null.
  * - `AccountStatus` (string): The account status of the user if the email is registered, otherwise "pending".
@@ -105,7 +154,7 @@ export async function isEmailAlreadyRegistered(email){ // function to get a user
  * @param {string} userId - The ID of the user to whom the contact will be added.
  * @param {string} contactId - The ID of the contact to be added.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the contact was successfully added.
  * 
  * @throws {Error} Will throw an error if the user is not found or if updating the user's document fails.
@@ -149,7 +198,7 @@ export async function addContact(userId, contactId) {  // function to add a cont
  * @param {string} userId - The ID of the user from whom the contact will be deleted.
  * @param {string} contactId - The ID of the contact to be deleted.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the contact was successfully deleted.
  * 
  * @throws {Error} Will throw an error if the user is not found or if updating the user's document fails.
@@ -189,9 +238,9 @@ export async function deleteContact(userId, contactId) { // function to delete a
  * 
  * @param {string} userId - The ID of the user whose contacts are to be retrieved.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the contacts were successfully retrieved.
- * - `contacts` (Array<string>): The filtered list of contact IDs.
+ * - `contacts` (Array&lt;string>): The filtered list of contact IDs.
  * - `message` (string): An error message if the operation fails.
  * 
  * @throws {Error} Will throw an error if fetching the user's document fails.
@@ -228,9 +277,9 @@ export async function getContacts(userId) { // function to get contacts
  * @param {string} userId - The ID of the user making the request.
  * @param {string} email - The email to search for.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the search was successful.
- * - `users` (Array<Object>): An array of user objects that match the search criteria.
+ * - `users` (Array&lt;Object>): An array of user objects that match the search criteria.
  * - `message` (string): An error message if the operation fails.
  * 
  * @throws {Error} Will throw an error if the search operation fails.
@@ -248,7 +297,7 @@ export async function searchUserByEmail(userId, email) {
 
     // Filter out the user with the provided userId and those in the blockedUser array
     const users = snapshot.docs // get the users from the snapshot
-      .filter(doc => doc.id !== userId && !blockedUsers.includes(doc.id)) // filter out the user with the provided userId and those in the blockedUser array
+      .filter(doc => doc.id !== userId &amp;&amp; !blockedUsers.includes(doc.id)) // filter out the user with the provided userId and those in the blockedUser array
       .map(doc => ({ // map the users to an object
         id: doc.id, // set the id
         ...doc.data() // set the user data
@@ -270,7 +319,7 @@ export async function searchUserByEmail(userId, email) {
  * 
  * @param {string} id - The ID of the user to retrieve.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the user was successfully retrieved.
  * - `id` (string): The ID of the user.
  * - `name` (string): The name of the user.
@@ -313,7 +362,7 @@ export async function selectUserById(id) { // function to get a user by id
  * @param {Date} code_timestamp - The timestamp of the code.
  * @param {string} AccountStatus - The account status of the user.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `id` (string|null): The ID of the newly created user if successful, otherwise null.
  * - `success` (boolean): Indicates if the user was successfully created.
  * 
@@ -357,7 +406,7 @@ export async function userNameEmailStep(name, email, code, code_timestamp, Accou
  * @param {boolean} notification - The new notification setting for the user.
  * @param {boolean} vibration - The new vibration setting for the user.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the toggles were successfully updated.
  * 
  * @throws {Error} Will throw an error if updating the user's document fails.
@@ -385,7 +434,7 @@ export async function updateToggles(id,sound,notification,vibration){
  * @param {string} id - The ID of the user whose profile picture is to be updated.
  * @param {string} avatarUrl - The new URL of the user's profile picture.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the profile picture was successfully updated.
  * 
  * @throws {Error} Will throw an error if updating the user's document fails.
@@ -413,7 +462,7 @@ export async function updateUserProfilePicture(id,avatarUrl){
  * @param {string} code - The new code for the user.
  * @param {Date} code_timestamp - The new timestamp for the code.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the code was successfully updated.
  * 
  * @throws {Error} Will throw an error if updating the user's document fails.
@@ -438,7 +487,7 @@ export async function updateCode(id,code,code_timestamp){
  * 
  * @param {string} id - The ID of the user whose code is to be retrieved.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `code` (string): The code of the user.
  * - `code_timestamp` (Date): The timestamp of the code.
  * 
@@ -467,7 +516,7 @@ export async function getCodeById(id){
  * @param {string} id - The ID of the user whose password is to be updated.
  * @param {string} password - The new password for the user.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the password was successfully updated.
  * 
  * @throws {Error} Will throw an error if updating the user's document fails.
@@ -491,7 +540,7 @@ export async function setPassword(id, password)  { // function to update the pas
  * @function selectAllUsers
  * @description This function fetches all user documents from the users collection and returns an array of user data.
  * 
- * @returns {Promise<Array<Object>>} A promise that resolves to an array of user objects.
+ * @returns {Promise&lt;Array&lt;Object>>} A promise that resolves to an array of user objects.
  * 
  * @throws {Error} Will throw an error if fetching the users fails.
  */
@@ -514,7 +563,7 @@ export  async function selectAllUsers() { // function to get all users
  * @param {string} id - The ID of the user whose account status is to be updated.
  * @param {string} status - The new account status for the user.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the account status was successfully updated.
  * 
  * @throws {Error} Will throw an error if updating the user's document fails.
@@ -536,7 +585,7 @@ export async function setAccountStatus(id,status){ // function to update the acc
  * @function clearUsersTable
  * @description This function deletes all documents in the users collection.
  * 
- * @returns {Promise<void>} A promise that resolves when the users table is cleared.
+ * @returns {Promise&lt;void>} A promise that resolves when the users table is cleared.
  * 
  * @throws {Error} Will throw an error if clearing the users table fails.
  */
@@ -562,7 +611,7 @@ export async function clearUsersTable(){
  * @param {string} id - The ID of the user whose name is to be updated.
  * @param {string} name - The new name for the user.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the name was successfully updated.
  * 
  * @throws {Error} Will throw an error if updating the user's document fails.
@@ -590,7 +639,7 @@ export async function updateName(id, name) {  // function to update the name
  * @param {string} userId - The ID of the user who is blocking another user.
  * @param {string} blockedUserId - The ID of the user to be blocked.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the user was successfully blocked.
  * - `message` (string): A message indicating the result of the operation.
  * 
@@ -649,7 +698,7 @@ export async function blockUser(userId, blockedUserId) { // function to block a 
  * @param {string} userId - The ID of the user who is unblocking another user.
  * @param {string} blockedUserId - The ID of the user to be unblocked.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the user was successfully unblocked.
  * - `message` (string): A message indicating the result of the operation.
  * 
@@ -702,7 +751,7 @@ export async function unblockUser(userId, blockedUserId) { // function to unbloc
  * @param {string} id - The ID of the user whose description is to be updated.
  * @param {string} description - The new description for the user.
  * 
- * @returns {Promise<Object>} A promise that resolves to an object containing:
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing:
  * - `success` (boolean): Indicates if the description was successfully updated.
  * 
  * @throws {Error} Will throw an error if updating the user's document fails.
@@ -745,7 +794,7 @@ export async function addMessage(senderId, receiverId, message, imageLink){
  * @param {string} message - The content of the message.
  * @param {string} imageLink - The URL of the image associated with the message.
  * 
- * @returns {Promise<void>} A promise that resolves when the message is added.
+ * @returns {Promise&lt;void>} A promise that resolves when the message is added.
  * 
  * @throws {Error} Will throw an error if adding the message fails.
  */
@@ -758,7 +807,7 @@ export async function signIn(email, password){
       if (snapshot.empty) { // if no user found with the email is found
       
         return {'success':false,'id':null}
-      } if(!snapshot.empty && snapshot.docs[0].data().password != password){ // if user found with the email but password is incorrect
+      } if(!snapshot.empty &amp;&amp; snapshot.docs[0].data().password != password){ // if user found with the email but password is incorrect
        
         if(snapshot.docs[0].data().AccountStatus === "blocked" ){
         
@@ -782,14 +831,14 @@ export async function signIn(email, password){
             logginAttempt_timestamp:Date.now()
           });
           return {'success':false,'id':null,'AccountStatus':snapshot.docs[0].data().AccountStatus}
-        } if((Date.now()-snapshot.docs[0].data().logginAttempt_timestamp)<180000 && snapshot.docs[0].data().logginAttempt < 3){
+        } if((Date.now()-snapshot.docs[0].data().logginAttempt_timestamp)&lt;180000 &amp;&amp; snapshot.docs[0].data().logginAttempt &lt; 3){
             // if last attemp was less than 3 min ago increment the count
               await usersCollection.doc(snapshot.docs[0].id).update({
               logginAttempt:snapshot.docs[0].data().logginAttempt+1,
              
             });
             return {'success':false,'id':null,'AccountStatus':snapshot.docs[0].data().AccountStatus}
-          } if(snapshot.docs[0].data().logginAttempt>0 && (Date.now()-snapshot.docs[0].data().logginAttempt_timestamp)>180000){ // if user has attempted to login before
+          } if(snapshot.docs[0].data().logginAttempt>0 &amp;&amp; (Date.now()-snapshot.docs[0].data().logginAttempt_timestamp)>180000){ // if user has attempted to login before
             //at least 1 atempt and last attempt was more than 3 min ago set count to 0 and attempt_timestamp to current time
             await usersCollection.doc(snapshot.docs[0].id).update({
                 logginAttempt:0,
@@ -797,7 +846,7 @@ export async function signIn(email, password){
               });
               
               return {'success':false,'id':null,'AccountStatus':snapshot.docs[0].data().AccountStatus}
-          } if((Date.now()-snapshot.docs[0].data().logginAttempt_timestamp)<180000 && snapshot.docs[0].data().logginAttempt>=3){
+          } if((Date.now()-snapshot.docs[0].data().logginAttempt_timestamp)&lt;180000 &amp;&amp; snapshot.docs[0].data().logginAttempt>=3){
              // if last attemp was less than 3 min ago and count is 3 or more set AccountStatus to blocked
             await usersCollection.doc(snapshot.docs[0].id).update({
               logginAttempt:0,
@@ -830,7 +879,7 @@ export async function signIn(email, password){
  * @async
  * @function addChatsFieldToUsers
  * @description This function checks each user document in the users collection and adds a 'chats' field if it doesn't already exist.
- * @returns {Promise<void>} A promise that resolves when the operation is complete.
+ * @returns {Promise&lt;void>} A promise that resolves when the operation is complete.
  * @throws Will throw an error if there is an issue with the database operation.
  */
 export async function addChatsFieldToUsers() { 
@@ -867,7 +916,7 @@ export async function addChatsFieldToUsers() {
  * @param {string} receiver - The ID of the receiver.
  * @param {string} imageLink - A link to an image associated with the message.
  * @param {number} msgTimestamp - The timestamp of the message.
- * @returns {Promise<Object>} A promise that resolves to an object containing the success status and the message ID if successful.
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing the success status and the message ID if successful.
  * @throws Will throw an error if there is an issue with the database operation.
  */
 export async function saveMessage(delivered, read, message, sender, receiver, imageLink, msgTimestamp) {
@@ -960,7 +1009,7 @@ export async function saveMessage(delivered, read, message, sender, receiver, im
  * @function markMessageDelivered
  * @description This function updates the 'delivered' field of a message document in the messages collection to true.
  * @param {string} messageId - The ID of the message to mark as delivered.
- * @returns {Promise<Object>} A promise that resolves to an object containing the success status.
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing the success status.
  * @throws Will throw an error if there is an issue with the database operation.
  */
 export async function markMessageDelivered(messageId) {
@@ -982,7 +1031,7 @@ export async function markMessageDelivered(messageId) {
  * @param {string} userId2 - The ID of the second user.
  * @param {number} [limit=20] - The maximum number of messages to retrieve.
  * @param {number} [lastMessageTimestamp=null] - The timestamp of the last message to start after.
- * @returns {Promise<Object>} A promise that resolves to an object containing the success status and an array of messages.
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing the success status and an array of messages.
  * @throws Will throw an error if there is an issue with the database operation.
  */
 export async function getMessagesBetweenUsers(userId1, userId2, limit = 20, lastMessageTimestamp = null) {
@@ -1014,7 +1063,7 @@ export async function getMessagesBetweenUsers(userId1, userId2, limit = 20, last
  * @function getChatsByUserId
  * @description This function retrieves chats from the chats collection by user ID.
  * @param {string} userId - The ID of the user whose chats are to be retrieved.
- * @returns {Promise<Object>} A promise that resolves to an object containing the success status and an array of chats.
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing the success status and an array of chats.
  * @throws Will throw an error if there is an issue with the database operation.
  */
 export async function getChatsByUserId(userId) {
@@ -1082,7 +1131,7 @@ export async function getChatsByUserId(userId) {
  * @param {string} chatId - The ID of the chat to retrieve messages from.
  * @param {number} [limit=20] - The maximum number of messages to retrieve.
  * @param {number} [lastMessageTimestamp=null] - The timestamp of the last message to start after.
- * @returns {Promise<Object>} A promise that resolves to an object containing the success status and an array of messages.
+ * @returns {Promise&lt;Object>} A promise that resolves to an object containing the success status and an array of messages.
  * @throws Will throw an error if there is an issue with the database operation.
  */
 export async function getMessagesByChatId(chatId, limit = 20, lastMessageTimestamp = null) {
@@ -1116,7 +1165,7 @@ export async function getMessagesByChatId(chatId, limit = 20, lastMessageTimesta
  * 
  * @function updateExistingUsers
  * @description This function fetches all user documents from the users collection and updates them with default values for the description, vibration, sound, and notification fields.
- * @returns {Promise<void>} A promise that resolves when the operation is complete.
+ * @returns {Promise&lt;void>} A promise that resolves when the operation is complete.
  * @throws Will throw an error if there is an issue with the database operation.
  */
 export async function updateExistingUsers() {
@@ -1139,4 +1188,30 @@ export async function updateExistingUsers() {
   } catch (error) {
     console.error('Error updating existing users: ', error);
   }
-}
+}</code></pre>
+        </article>
+    </section>
+
+
+
+
+    
+    
+</div>
+
+<br class="clear">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.3</a> on Wed Aug 07 2024 13:31:28 GMT+0000 (Coordinated Universal Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+</footer>
+
+<script>prettyPrint();</script>
+<script src="scripts/polyfill.js"></script>
+<script src="scripts/linenumber.js"></script>
+
+<script src="scripts/search.js" defer></script>
+
+
+
+</body>
+</html>

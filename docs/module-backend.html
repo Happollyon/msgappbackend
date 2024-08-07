@@ -31,7 +31,7 @@
     <input type="text" id="nav-search" placeholder="Search" />
     
     
-    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-backend.html">backend</a><ul class='methods'><li data-type='method'><a href="module-backend.html#~authenticateToken">authenticateToken</a></li><li data-type='method'><a href="module-backend.html#~createUser">createUser</a></li><li data-type='method'><a href="module-backend.html#~generateToken">generateToken</a></li><li data-type='method'><a href="module-backend.html#~getDataFromToken">getDataFromToken</a></li></ul></li></ul>
+    <h2><a href="index.html">Home</a></h2><h3>Modules</h3><ul><li><a href="module-backend.html">backend</a><ul class='methods'><li data-type='method'><a href="module-backend.html#~authenticateToken">authenticateToken</a></li><li data-type='method'><a href="module-backend.html#~authenticateTokenWebsocket">authenticateTokenWebsocket</a></li><li data-type='method'><a href="module-backend.html#~generateToken">generateToken</a></li><li data-type='method'><a href="module-backend.html#~getDataFromToken">getDataFromToken</a></li><li data-type='method'><a href="module-backend.html#~markMessageDeliveredTouser">markMessageDeliveredTouser</a></li><li data-type='method'><a href="module-backend.html#~savemessage">savemessage</a></li></ul></li></ul><h3>Global</h3><ul><li><a href="global.html#addChatsFieldToUsers">addChatsFieldToUsers</a></li><li><a href="global.html#addContact">addContact</a></li><li><a href="global.html#addMessage">addMessage</a></li><li><a href="global.html#blockUser">blockUser</a></li><li><a href="global.html#clearUsersTable">clearUsersTable</a></li><li><a href="global.html#createUser">createUser</a></li><li><a href="global.html#deleteContact">deleteContact</a></li><li><a href="global.html#getChatsByUserId">getChatsByUserId</a></li><li><a href="global.html#getCodeById">getCodeById</a></li><li><a href="global.html#getContacts">getContacts</a></li><li><a href="global.html#getMessagesBetweenUsers">getMessagesBetweenUsers</a></li><li><a href="global.html#getMessagesByChatId">getMessagesByChatId</a></li><li><a href="global.html#isEmailAlreadyRegistered">isEmailAlreadyRegistered</a></li><li><a href="global.html#markMessageDelivered">markMessageDelivered</a></li><li><a href="global.html#saveMessage">saveMessage</a></li><li><a href="global.html#searchUserByEmail">searchUserByEmail</a></li><li><a href="global.html#selectAllUsers">selectAllUsers</a></li><li><a href="global.html#selectUserById">selectUserById</a></li><li><a href="global.html#setAccountStatus">setAccountStatus</a></li><li><a href="global.html#setPassword">setPassword</a></li><li><a href="global.html#unblockUser">unblockUser</a></li><li><a href="global.html#updateCode">updateCode</a></li><li><a href="global.html#updateDescription">updateDescription</a></li><li><a href="global.html#updateExistingUsers">updateExistingUsers</a></li><li><a href="global.html#updateName">updateName</a></li><li><a href="global.html#updateToggles">updateToggles</a></li><li><a href="global.html#updateUserProfilePicture">updateUserProfilePicture</a></li><li><a href="global.html#userNameEmailStep">userNameEmailStep</a></li></ul>
     
 </nav>
 
@@ -60,7 +60,9 @@
         <div class="container-overview">
         
             
-                <div class="description usertext"><p>This is the backend module</p></div>
+                <div class="description usertext"><p>This is the backend module for the messaging app. It includes the endpoints for user registration, login,
+and messaging between users using WebSockets. It also includes the endpoints for uploading images to an S3 bucket,
+updating user profile pictures, and updating user settings.</p></div>
             
 
             
@@ -72,13 +74,15 @@
 <dl class="details">
     
     <dt class="tag-description">Description:</dt>
-    <dd class="tag-description"><ul class="dummy"><li><p>This is the backend module</p></li></ul></dd>
+    <dd class="tag-description"><ul class="dummy"><li><p>This is the backend module for the messaging app. It includes the endpoints for user registration, login,
+and messaging between users using WebSockets. It also includes the endpoints for uploading images to an S3 bucket,
+updating user profile pictures, and updating user settings.</p></li></ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line19">line 19</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line31">line 31</a>
     </li></ul></dd>
     
 
@@ -203,7 +207,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line40">line 40</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line159">line 159</a>
     </li></ul></dd>
     
 
@@ -380,7 +384,7 @@
 
     
 
-    <h4 class="name" id="~createUser"><span class="type-signature type-signature-inner">(inner) </span>createUser<span class="signature">(name, email, password, avatar)</span><span class="type-signature"> &rarr; {Promise.&lt;void>}</span></h4>
+    <h4 class="name" id="~authenticateTokenWebsocket"><span class="type-signature type-signature-inner">(inner) </span>authenticateTokenWebsocket<span class="signature">(token)</span><span class="type-signature"> &rarr; {Object}</span></h4>
 
     
 
@@ -390,13 +394,13 @@
 <dl class="details">
     
     <dt class="tag-description">Description:</dt>
-    <dd class="tag-description"><ul class="dummy"><li><p>This function creates a new user</p></li></ul></dd>
+    <dd class="tag-description"><ul class="dummy"><li><p>Verifies the provided token and returns the user data if the token is valid.</p></li></ul></dd>
     
 
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line63">line 63</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line181">line 181</a>
     </li></ul></dd>
     
 
@@ -468,7 +472,7 @@
 
         <tr>
             
-                <td class="name"><code>name</code></td>
+                <td class="name"><code>token</code></td>
             
 
             <td class="type">
@@ -485,79 +489,7 @@
 
             
 
-            <td class="description last"><p>The name of the user</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>email</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The email of the user</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>password</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The password of the user</p></td>
-        </tr>
-
-    
-
-        <tr>
-            
-                <td class="name"><code>avatar</code></td>
-            
-
-            <td class="type">
-            
-                
-<span class="param-type">string</span>
-
-
-
-            
-            </td>
-
-            
-
-            
-
-            <td class="description last"><p>The avatar of the user</p></td>
+            <td class="description last"><p>The JWT token to be verified.</p></td>
         </tr>
 
     
@@ -577,11 +509,45 @@
 
 
 
+<h5 class="h5-throws">Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc usertext">
+        <p>If the token is invalid or verification fails.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl class="param-type">
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
 
 
 <h5 class="h5-returns">Returns:</h5>
 
         
+<div class="param-desc">
+    <p>The decoded user data from the token.</p>
+</div>
+
 
 
 <dl class="param-type">
@@ -590,7 +556,7 @@
     </dt>
     <dd>
         
-<span class="param-type">Promise.&lt;void></span>
+<span class="param-type">Object</span>
 
 
 
@@ -622,7 +588,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line30">line 30</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line149">line 149</a>
     </li></ul></dd>
     
 
@@ -780,7 +746,7 @@
     
     <dt class="tag-source">Source:</dt>
     <dd class="tag-source"><ul class="dummy"><li>
-        <a href="index.js.html">index.js</a>, <a href="index.js.html#line159">line 159</a>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line287">line 287</a>
     </li></ul></dd>
     
 
@@ -905,6 +871,526 @@
 
 
         
+            
+
+    
+
+    <h4 class="name" id="~markMessageDeliveredTouser"><span class="type-signature type-signature-inner">(inner) </span>markMessageDeliveredTouser<span class="signature">(messageId)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Marks a message as delivered based on the provided message ID.</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line999">line 999</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="h5-parameters">Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>messageId</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The ID of the message to mark as delivered.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-throws">Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc usertext">
+        <p>If the message delivery status could not be updated.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl class="param-type">
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>A promise that resolves with the message delivery status.</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Object></span>
+
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
+            
+
+    
+
+    <h4 class="name" id="~savemessage"><span class="type-signature type-signature-inner">(inner) </span>savemessage<span class="signature">(delivered, read, message, sender, receiver, imageLink, msgTimestamp)</span><span class="type-signature"> &rarr; {Promise.&lt;Object>}</span></h4>
+
+    
+
+
+
+
+<dl class="details">
+    
+    <dt class="tag-description">Description:</dt>
+    <dd class="tag-description"><ul class="dummy"><li><p>Saves a message with the provided details to the database.</p></li></ul></dd>
+    
+
+    
+    <dt class="tag-source">Source:</dt>
+    <dd class="tag-source"><ul class="dummy"><li>
+        <a href="index.js.html">index.js</a>, <a href="index.js.html#line966">line 966</a>
+    </li></ul></dd>
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+
+    
+</dl>
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <h5 class="h5-parameters">Parameters:</h5>
+    
+
+<table class="params">
+    <thead>
+    <tr>
+        
+        <th>Name</th>
+        
+
+        <th>Type</th>
+
+        
+
+        
+
+        <th class="last">Description</th>
+    </tr>
+    </thead>
+
+    <tbody>
+    
+
+        <tr>
+            
+                <td class="name"><code>delivered</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Indicates if the message was delivered.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>read</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">boolean</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>Indicates if the message was read.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>message</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The content of the message.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>sender</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The ID of the sender.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>receiver</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The ID of the receiver.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>imageLink</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">string</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The link to the image associated with the message.</p></td>
+        </tr>
+
+    
+
+        <tr>
+            
+                <td class="name"><code>msgTimestamp</code></td>
+            
+
+            <td class="type">
+            
+                
+<span class="param-type">number</span>
+
+
+
+            
+            </td>
+
+            
+
+            
+
+            <td class="description last"><p>The timestamp of the message.</p></td>
+        </tr>
+
+    
+    </tbody>
+</table>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<h5 class="h5-throws">Throws:</h5>
+
+        
+
+<dl>
+    <dt>
+        <div class="param-desc usertext">
+        <p>If the message could not be saved.</p>
+        </div>
+    </dt>
+    <dd></dd>
+    <dt>
+        <dl class="param-type">
+            <dt>
+                Type
+            </dt>
+            <dd>
+                
+<span class="param-type">Error</span>
+
+
+
+            </dd>
+        </dl>
+    </dt>
+    <dd></dd>
+</dl>
+
+
+    
+
+
+<h5 class="h5-returns">Returns:</h5>
+
+        
+<div class="param-desc">
+    <p>A promise that resolves with the saved message details.</p>
+</div>
+
+
+
+<dl class="param-type">
+    <dt>
+        Type
+    </dt>
+    <dd>
+        
+<span class="param-type">Promise.&lt;Object></span>
+
+
+
+    </dd>
+</dl>
+
+    
+
+
+
+        
     
 
     
@@ -924,7 +1410,7 @@
 <br class="clear">
 
 <footer>
-    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.3</a> on Mon Jul 01 2024 15:16:34 GMT+0000 (Coordinated Universal Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 4.0.3</a> on Wed Aug 07 2024 13:31:28 GMT+0000 (Coordinated Universal Time) using the <a href="https://github.com/clenemt/docdash">docdash</a> theme.
 </footer>
 
 <script>prettyPrint();</script>
