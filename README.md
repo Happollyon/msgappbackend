@@ -22,6 +22,7 @@ This is the backend service for the Messaging App, built with Express.js. It han
 ## Installation
 
 1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/messaging-app-backend.git
+   
+   git clone https://github.com/Happollyon/msgappbackend.git
+   
    cd messaging-app-backend
