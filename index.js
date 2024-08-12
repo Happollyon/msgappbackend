@@ -7,20 +7,27 @@ import multer from 'multer'; // Import the multer library
 
 import {blockUser,unblockUser,getMessagesByChatId,getChatsByUserId,getMessagesBetweenUsers,markMessageDelivered,saveMessage,updateUserProfilePicture,updateToggles,updateDescription,updateExistingUsers,updateName,selectUserById,getContacts,deleteContact,addContact,searchUserByEmail,createUser,signIn,clearUsersTable,setAccountStatus,updateCode,getCodeById,selectAllUsers,isEmailAlreadyRegistered,userNameEmailStep, setPassword} from './db.js';
 import nodemailer from 'nodemailer'; // Import the nodemailer library
+import dotenv from 'dotenv';
+dotenv.config();
 
+const secretKey = process.env.SECRET_KEY;
+const password_gmail = process.env.password_gmail;
+const aws_access_key_id = process.env.aws_access_key_id;
+const aws_secret_access_key = process.env.aws_secret_access_key;
+console.log(secretKey);
 const app = express(); // Create an express app
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: 'fagnernunes1108@gmail.com', // Your email
-    pass: 'kcnj wyae ehov qgdl' // Your email password
+    pass: password_gmail // Your email password
   }
 });
 
 // Configure AWS SDK
 AWS.config.update({
-  accessKeyId: 'AKIA6GBMHBXKSJ4MBQ5B',
-  secretAccessKey: '49tWX4UWShQ3F3p/qzAcJrTuoJAe3xrpYjSLW9Rr',
+  accessKeyId: aws_access_key_id,
+  secretAccessKey: aws_secret_access_key,
   region: 'eu-north-1'
 });
 
@@ -141,7 +148,7 @@ app.post('/upload-profile-picture', authenticateToken, upload.single('photo'), a
 });
 
 
-const JWT_SECRET = 'mysecret-key-test-123-fasfaf-f6254fdw95d46s58saf61afdfw0fw48df4d86f0asf48sa'; // Secret key for JWT (change in production)
+const JWT_SECRET = process.env.jwt_secret; // Secret key for JWT (change in production)
 
 
 
@@ -470,7 +477,7 @@ app.get('/contacts/get-contacts',authenticateToken, async (req, res) => {
   const contacts = await getContacts(tokenData.id);
   if(contacts.success){
     // return only id, name, email, avatarUrl,and isFriend
-
+    console.log(contacts);
     const ReturnedContacts = contacts.contacts.map(contact => 
       {return {id: contact.id, name: contact.name, email: contact.email, avatarUrl: contact.avatarUrl ,contact:true}}
     );    

@@ -1,2 +1,5 @@
 node_modules
 msgappBackend.pem
+.env
+msgappdb-firebase-adminsdk-jaae3-bf4267c713.json
+msgappdb-firebase-adminsdk-jaae3-fa6ef0b179.json

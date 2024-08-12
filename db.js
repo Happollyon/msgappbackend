@@ -197,6 +197,39 @@ export async function deleteContact(userId, contactId) { // function to delete a
  * @throws {Error} Will throw an error if fetching the user's document fails.
  */
 
+export async function getContacts(userId) {
+  try {
+    const userSnapshot = await usersCollection.doc(userId).get();
+    if (!userSnapshot.exists) {
+      return { "success": false, "message": "User not found" };
+    }
+
+    const userData = userSnapshot.data();
+    const contacts = userData.contacts || [];
+    const blockedUsers = userData.blockedUser || [];
+
+    // Filter out contacts that are in the blockedUser array
+    const filteredContacts = contacts.filter(contactId => !blockedUsers.includes(contactId));
+
+    // Fetch contact details
+    const contactDetailsPromises = filteredContacts.map(async contactId => {
+      const contactSnapshot = await usersCollection.doc(contactId).get();
+      if (contactSnapshot.exists) {
+        const contactData = contactSnapshot.data();
+        return { id: contactId, ...contactData };
+      }
+      return null;
+    });
+
+    const contactDetails = await Promise.all(contactDetailsPromises);
+
+    return { "success": true, "contacts": contactDetails.filter(contact => contact !== null) };
+  } catch (error) {
+    console.error('Error getting contacts: ', error);
+    return { "success": false, "message": "Error getting contacts" };
+  }
+}
+/*
 export async function getContacts(userId) { // function to get contacts
   try { // try to get the contacts
     const userSnapshot = await usersCollection.doc(userId).get(); // get the user document by userId
@@ -216,7 +249,7 @@ export async function getContacts(userId) { // function to get contacts
     console.error('Error getting contacts: ', error); // log the error
     return { "success": false, "message": "Error getting contacts" }; // return success as false
   }
-}
+}*/
 
 /**
  * Searches for users by email, excluding the requesting user and blocked users.
